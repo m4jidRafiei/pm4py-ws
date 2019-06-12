@@ -13,6 +13,7 @@ RUN pip install -U pyinstaller PyQT5 setuptools
 COPY . /
 RUN git submodule init
 RUN git submodule update
+RUN cd /webapp2 && git checkout master && git pull
 RUN cd /webapp2 && npm install
 RUN cd /webapp2 && npm install --save-dev --unsafe-perm node-sass
 RUN cd /webapp2 && npm install -g @angular/cli
