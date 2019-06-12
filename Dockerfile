@@ -11,9 +11,13 @@ RUN apt-get -y install zip unzip
 RUN pip install -U pm4py Flask flask-cors requests python-keycloak
 RUN pip install -U pyinstaller PyQT5 setuptools
 COPY . /
-RUN git submodule init
-RUN git submodule update
-RUN cd /webapp2 && git checkout master && git pull
+#RUN git submodule init
+#RUN git submodule update
+#RUN cd /webapp2 && git checkout master && git pull
+RUN mkdir -p /webapp2
+RUN rm -rRf /webapp2
+RUN mkdir -p /webapp2
+RUN cd /webapp2 && git clone https://github.com/pm-tk/source.git
 RUN cd /webapp2 && npm install
 RUN cd /webapp2 && npm install --save-dev --unsafe-perm node-sass
 RUN cd /webapp2 && npm install -g @angular/cli
