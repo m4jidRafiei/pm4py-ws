@@ -16,8 +16,8 @@ COPY . /
 #RUN cd /webapp2 && git checkout master && git pull
 RUN mkdir -p /webapp2
 RUN rm -rRf /webapp2
-RUN mkdir -p /webapp2
-RUN cd /webapp2 && git clone https://github.com/pm-tk/source.git
+RUN git clone https://github.com/pm-tk/source.git
+RUN mv /source /webapp2
 RUN cd /webapp2 && npm install
 RUN cd /webapp2 && npm install --save-dev --unsafe-perm node-sass
 RUN cd /webapp2 && npm install -g @angular/cli
