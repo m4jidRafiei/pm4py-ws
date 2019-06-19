@@ -4,3 +4,4 @@ class Configuration:
     enable_load_local_path = True
     enable_session = False
     upload_as_temporary = True
+    session_duration = 86400

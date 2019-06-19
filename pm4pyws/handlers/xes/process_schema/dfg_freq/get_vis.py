@@ -7,6 +7,9 @@ from pm4py.util import constants as pm4_constants
 from pm4py.objects.log.util import xes
 from pm4py.algo.filtering.log.start_activities import start_activities_filter
 from pm4py.algo.filtering.log.end_activities import end_activities_filter
+from pm4py.objects.conversion.dfg import factory as dfg_conv_factory
+from pm4py.objects.petri.exporter.pnml import export_petri_as_string
+from pm4pyws.util import get_graph
 import base64
 
 from pm4pyws.util import constants
@@ -51,4 +54,8 @@ def apply(log, parameters=None):
 
     gviz_base64 = base64.b64encode(str(gviz).encode('utf-8'))
 
-    return get_base64_from_gviz(gviz), None, "", "xes", activities, start_activities, end_activities, gviz_base64
+    ret_graph = get_graph.get_graph_from_dfg(dfg, start_activities, end_activities)
+
+    net, im, fm = dfg_conv_factory.apply(dfg, parameters={"start_activities": start_activities, "end_activities": end_activities})
+
+    return get_base64_from_gviz(gviz), export_petri_as_string(net, im, fm), ".pnml", "xes", activities, start_activities, end_activities, gviz_base64, ret_graph

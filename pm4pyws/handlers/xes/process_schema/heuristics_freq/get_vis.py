@@ -59,4 +59,4 @@ def apply(log, parameters=None):
 
     gviz_base64 = base64.b64encode("".encode('utf-8'))
 
-    return get_base64_from_file(vis.name), None, "", "xes", activities, start_activities, end_activities, gviz_base64
+    return get_base64_from_file(vis.name), None, "", "xes", activities, start_activities, end_activities, gviz_base64, []

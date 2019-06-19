@@ -9,9 +9,8 @@ HOW TO INSTALL FROM PIP:
 pip install -U pm4pyws
 
 Then, the script "main.py" could be launched with pre-defined log
-
-Or the "run_log.py" and "run_log.bat" could be copied (for example, in C:), and then
-XES files be open by double click by launching them through "run_log.bat"
+In this case, the databases "event_logs.db" and "users.db" should be there with the pre-defined logs,
+contained in the "logs" folder.
 
 
 HOW TO BUILD ON SOURCES:

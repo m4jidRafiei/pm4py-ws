@@ -24,6 +24,15 @@ class Commons:
     semaphore_matplot = Semaphore(1)
 
 
+def clean_expired_sessions():
+    """
+    Cleans expired sessions
+    """
+    um.clean_expired_sessions()
+    sessions = um.get_all_sessions()
+    lh.remove_unneeded_sessions(sessions)
+
+
 def do_login(user, password):
     """
     Logs in a user and returns a session id
@@ -40,7 +49,11 @@ def do_login(user, password):
     session_id
         Session ID
     """
-    return um.do_login(user, password)
+    ret = um.do_login(user, password)
+
+    clean_expired_sessions()
+
+    return ret
 
 
 def check_session_validity(session_id):
@@ -58,6 +71,8 @@ def check_session_validity(session_id):
         Boolean value
     """
     if Configuration.enable_session:
+        clean_expired_sessions()
+
         validity = um.check_session_validity(session_id)
         return validity
     return True
@@ -105,6 +120,7 @@ class PM4PyServices:
         lh.load_log_static(log_name, file_path, parameters=parameters)
 
     def serve(self, host="0.0.0.0", port="5000", threaded=True):
+        clean_expired_sessions()
         self.app.run(host=host, port=port, threaded=threaded)
 
 
@@ -121,6 +137,8 @@ def get_process_schema():
         and 'format' contains the format
     :return:
     """
+    clean_expired_sessions()
+
     dictio = {}
     # reads the session
     session = request.args.get('session', type=str)
@@ -152,18 +170,61 @@ def get_process_schema():
                     start_activities = saved_obj[5]
                     end_activities = saved_obj[6]
                     gviz_base64 = saved_obj[7]
+                    graph_rep = saved_obj[8]
                 else:
-                    base64, model, format, this_handler, activities, start_activities, end_activities, gviz_base64 = handler.get_schema(
+                    base64, model, format, this_handler, activities, start_activities, end_activities, gviz_base64, graph_rep = handler.get_schema(
                         variant=variant,
                         parameters=parameters)
-                    lh.save_object_memory(ps_repr, [base64, model, format, this_handler, activities, start_activities, end_activities, gviz_base64])
+                    lh.save_object_memory(ps_repr, [base64, model, format, this_handler, activities, start_activities,
+                                                    end_activities, gviz_base64, graph_rep])
                 if model is not None:
                     model = model.decode('utf-8')
-                dictio = {"base64": base64.decode('utf-8'), "model": model, "format": format, "handler": this_handler, "activities": activities,
-                          "start_activities": start_activities, "end_activities": end_activities, "gviz_base64": gviz_base64.decode('utf-8')}
+                dictio = {"base64": base64.decode('utf-8'), "model": model, "format": format, "handler": this_handler,
+                          "activities": activities,
+                          "start_activities": start_activities, "end_activities": end_activities,
+                          "gviz_base64": gviz_base64.decode('utf-8'), "graph_rep": graph_rep}
             except:
                 logging.error(traceback.format_exc())
             Commons.semaphore_matplot.release()
+    ret = jsonify(dictio)
+    return ret
+
+
+@PM4PyServices.app.route("/getNumericAttributeGraph", methods=["GET"])
+def get_numeric_attribute_graph():
+    """
+    Gets the numeric attribute graph
+
+    Returns
+    -------------
+    dictio
+        JSONified dictionary that contains in the 'base64' entry the SVG representation
+        of the case duration graph
+    """
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+    # reads the requested process name
+    process = request.args.get('process', default='receipt', type=str)
+    # reads the requested attribute
+    attribute = request.args.get('attribute', type=str)
+
+    dictio = {}
+    if check_session_validity(session):
+        user = get_user_from_session(session)
+        if lh.check_user_log_visibility(user, process):
+            Commons.semaphore_matplot.acquire()
+            try:
+                base64, gviz_base64, ret = lh.get_handler_for_process_and_session(process,
+                                                                                  session).get_numeric_attribute_svg(
+                    attribute)
+                dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz_base64.decode('utf-8'), "points": ret}
+            except:
+                logging.error(traceback.format_exc())
+                dictio = {"base64": "", "gviz_base64": "", "points": []}
+            Commons.semaphore_matplot.release()
+
     ret = jsonify(dictio)
     return ret
 
@@ -179,6 +240,8 @@ def get_case_duration():
         JSONified dictionary that contains in the 'base64' entry the SVG representation
         of the case duration graph
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -190,7 +253,8 @@ def get_case_duration():
         if lh.check_user_log_visibility(user, process):
             Commons.semaphore_matplot.acquire()
             try:
-                base64, gviz_base64, ret = lh.get_handler_for_process_and_session(process, session).get_case_duration_svg()
+                base64, gviz_base64, ret = lh.get_handler_for_process_and_session(process,
+                                                                                  session).get_case_duration_svg()
                 dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz_base64.decode('utf-8'), "points": ret}
             except:
                 logging.error(traceback.format_exc())
@@ -212,6 +276,8 @@ def get_events_per_time():
         JSONified dictionary that contains in the 'base64' entry the SVG representation
         of the events per time graph
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -224,7 +290,8 @@ def get_events_per_time():
         if lh.check_user_log_visibility(user, process):
             Commons.semaphore_matplot.acquire()
             try:
-                base64, gviz_base64, ret = lh.get_handler_for_process_and_session(process, session).get_events_per_time_svg()
+                base64, gviz_base64, ret = lh.get_handler_for_process_and_session(process,
+                                                                                  session).get_events_per_time_svg()
                 dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz_base64.decode('utf-8'), "points": ret}
             except:
                 logging.error(traceback.format_exc())
@@ -246,6 +313,8 @@ def get_sna():
     html
         HTML page containing the SNA representation
     """
+    clean_expired_sessions()
+
     try:
         # reads the session
         session = request.args.get('session', type=str)
@@ -277,6 +346,8 @@ def get_all_variants():
     dictio
         JSONified dictionary that contains in the 'variants' entry the list of variants
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -305,6 +376,8 @@ def get_all_cases():
     dictio
         JSONified dictionary that contains in the 'cases' entry the list of cases
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     process = request.args.get('process', default='receipt', type=str)
@@ -335,6 +408,8 @@ def get_events():
     dictio
         JSONified dictionary that contains in the 'events' entry the list of events
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     process = request.args.get('process', default='receipt', type=str)
@@ -363,6 +438,8 @@ def load_log_from_path():
     """
     Service that loads a log from a path
     """
+    clean_expired_sessions()
+
     if Configuration.enable_load_local_path:
         try:
             # reads the session
@@ -395,6 +472,8 @@ def get_logs_list():
     dictio
         JSONified dictionary that contains in the 'logs' entry the list of events logs
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
 
@@ -412,6 +491,36 @@ def get_logs_list():
     return jsonify({"logs": available_keys})
 
 
+@PM4PyServices.app.route("/getLogsListAdvanced", methods=["GET"])
+def get_logs_list_advanced():
+    """
+    Gets the list of logs loaded into the system
+
+    Returns
+    -----------
+    dictio
+        JSONified dictionary that contains in the 'logs' entry the list of events logs
+    """
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+
+    available_keys = []
+
+    if check_session_validity(session):
+        user = get_user_from_session(session)
+
+        all_keys = lh.get_handlers().keys()
+
+        for key in all_keys:
+            if lh.check_user_log_visibility(user, key):
+                can_download = lh.check_user_enabled_download(user, key)
+                available_keys.append({"log_name": key, "can_download": can_download})
+
+    return jsonify({"logs": available_keys})
+
+
 @PM4PyServices.app.route("/transientAnalysis", methods=["GET"])
 def do_transient_analysis():
     """
@@ -423,6 +532,8 @@ def do_transient_analysis():
         JSONified dictionary that contains in the 'base64' entry the SVG representation
         of the events per time graph
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -440,7 +551,7 @@ def do_transient_analysis():
                 base64, gviz = lh.get_handler_for_process_and_session(process, session).get_transient(delay)
                 dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz.decode('utf-8')}
             except:
-                pass
+                logging.error(traceback.format_exc())
             Commons.semaphore_matplot.release()
 
     ret = jsonify(dictio)
@@ -457,6 +568,8 @@ def get_log_summary():
     log_summary
         Log summary
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -496,6 +609,8 @@ def download_xes_log():
     xes_log
         XES log
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -520,6 +635,8 @@ def download_csv_log():
     csv_log
         CSV log
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -544,6 +661,8 @@ def get_start_activities():
     start_activities
         Dictionary of start activities
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -569,6 +688,8 @@ def get_end_activities():
     end_activities
         Dictionary of end activities
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -586,6 +707,8 @@ def get_end_activities():
 
 @PM4PyServices.app.route("/getAttributesList", methods=["GET"])
 def get_attributes_list():
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -601,6 +724,8 @@ def get_attributes_list():
 
 @PM4PyServices.app.route("/getAttributeValues", methods=["GET"])
 def get_attribute_values():
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -618,6 +743,8 @@ def get_attribute_values():
 
 @PM4PyServices.app.route("/loginService", methods=["GET"])
 def login_service():
+    clean_expired_sessions()
+
     if Configuration.enable_session:
         # reads the user name
         user = request.args.get('user', type=str)
@@ -635,6 +762,8 @@ def login_service():
 
 @PM4PyServices.app.route("/checkSessionService", methods=["GET"])
 def check_session_service():
+    clean_expired_sessions()
+
     if Configuration.enable_session:
         # reads the session
         session = request.args.get('session', type=str)
@@ -667,6 +796,8 @@ def generate_random_string(N):
 
 @PM4PyServices.app.route("/uploadLog", methods=["POST"])
 def upload_log():
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     if check_session_validity(session):
@@ -709,6 +840,8 @@ def get_alignments():
     dictio
         Dictionary containing the Petri net and the table
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -745,6 +878,8 @@ def add_filter():
     dictio
         Success, or not
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name
@@ -775,6 +910,8 @@ def remove_filter():
     dictio
         Success, or not
     """
+    clean_expired_sessions()
+
     # reads the session
     session = request.args.get('session', type=str)
     # reads the requested process name

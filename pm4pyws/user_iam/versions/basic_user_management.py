@@ -3,6 +3,7 @@ import uuid
 
 from pm4pyws.user_iam.interface.user_management import UserManagement
 
+from pm4pyws.configuration import Configuration
 
 class BasicUserManagement(UserManagement):
     def __init__(self, ex, parameters=None):
@@ -86,3 +87,51 @@ class BasicUserManagement(UserManagement):
             user = str(results[0])
         conn_users.close()
         return user
+
+    def clean_expired_sessions(self):
+        """
+        Cleans the expired sessions in IAM
+        """
+        conn_users = sqlite3.connect(self.user_db)
+        curs_users = conn_users.cursor()
+
+        expired_sessions = []
+
+        curs_users.execute(
+            "SELECT SESSION_ID FROM SESSIONS WHERE Cast ((JulianDay(datetime('now')) - JulianDay(CREATION_DATE)) * 24 * 60 * 60 As Integer) >= "+str(Configuration.session_duration))
+        results = curs_users.fetchall()
+        if results is not None:
+            for result in results:
+                expired_sessions.append(str(result[0]))
+
+        if expired_sessions:
+            curs_users.execute(
+                "DELETE FROM SESSIONS WHERE Cast ((JulianDay(datetime('now')) - JulianDay(CREATION_DATE)) * 24 * 60 * 60 As Integer) >= " + str(
+                    Configuration.session_duration))
+            conn_users.commit()
+        else:
+            #print("NO EXPIRED")
+            pass
+
+        conn_users.close()
+
+    def get_all_sessions(self):
+        """
+        Gets all sessions from the users database
+
+        Returns
+        -----------
+        sessions
+            List of sessions
+        """
+
+        sessions = []
+        conn_users = sqlite3.connect(self.user_db)
+        curs_users = conn_users.cursor()
+        curs_users.execute("SELECT SESSION_ID FROM SESSIONS")
+        results = curs_users.fetchall()
+        if results is not None:
+            for result in results:
+                sessions.append(str(result[0]))
+        conn_users.close()
+        return sessions

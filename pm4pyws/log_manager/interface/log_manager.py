@@ -14,6 +14,17 @@ class LogHandler(object):
         """
         raise Exception("log_manager get_handlers not implemented!")
 
+    def remove_unneeded_sessions(self, all_sessions):
+        """
+        Remove expired sessions
+
+        Parameters
+        ------------
+        all_sessions
+            All valid sessions
+        """
+        raise Exception("log_manager remove_unneeded_sessions not implemented!")
+
     def get_handler_for_process_and_session(self, process, session):
         """
         Gets an handler for a given process and session

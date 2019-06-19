@@ -25,7 +25,7 @@ def apply(df, delay, parameters=None):
     if parameters is None:
         parameters = {}
 
-    tang_reach_graph, transient_analysis, fillcolors = ctmc.transient_analysis_from_dataframe(df, delay)
+    tang_reach_graph, transient_analysis, fillcolors = ctmc.transient_analysis_from_dataframe(df, delay, parameters=parameters)
     viz = ts_vis_factory.apply(tang_reach_graph, parameters={"format": "svg",
                                                              "force_names": transient_analysis,
                                                              "fillcolors": fillcolors})

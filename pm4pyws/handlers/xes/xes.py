@@ -16,7 +16,7 @@ from pm4pyws.handlers.xes.ctmc import transient
 from pm4pyws.handlers.xes.filtering import factory as filtering_factory
 from pm4pyws.handlers.xes.process_schema import factory as process_schema_factory
 from pm4pyws.handlers.xes.sna import get_sna as sna_obtainer
-from pm4pyws.handlers.xes.statistics import events_per_time, case_duration
+from pm4pyws.handlers.xes.statistics import events_per_time, case_duration, numeric_attribute
 from pm4pyws.util import casestats
 
 
@@ -67,7 +67,7 @@ class XesHandler(object):
         """
         self.first_ancestor = ancestor.first_ancestor
         self.last_ancestor = ancestor
-        #self.filters_chain = ancestor.filters_chain
+        # self.filters_chain = ancestor.filters_chain
         self.log = ancestor.log
         self.activity_key = ancestor.activity_key
 
@@ -135,7 +135,7 @@ class XesHandler(object):
         parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        #parameters["variants"] = self.variants
+        # parameters["variants"] = self.variants
         self.log = filtering_factory.apply(self.log, filter, parameters=parameters)
         self.filters_chain.append(filter)
 
@@ -185,7 +185,8 @@ class XesHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        self.variants, self.variants_times = variants_filter.get_variants_along_with_case_durations(self.log, parameters=parameters)
+        self.variants, self.variants_times = variants_filter.get_variants_along_with_case_durations(self.log,
+                                                                                                    parameters=parameters)
 
     def calculate_variants_number(self):
         """
@@ -230,6 +231,24 @@ class XesHandler(object):
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
         return process_schema_factory.apply(self.log, variant=variant, parameters=parameters)
+
+    def get_numeric_attribute_svg(self, attribute, parameters=None):
+        """
+        Get the SVG of a numeric attribute
+
+        Parameters
+        ------------
+        attribute
+            Attribute
+        parameters
+            Other possible parameters
+        """
+        if parameters is None:
+            parameters = {}
+        parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
+        parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
+
+        return numeric_attribute.get_numeric_attribute_distr_svg(self.log, attribute, parameters=parameters)
 
     def get_case_duration_svg(self, parameters=None):
         """
@@ -363,7 +382,7 @@ class XesHandler(object):
             var_to_filter = parameters["variant"]
             # TODO: TECHNICAL DEBT
             # quick turnaround for bug
-            var_to_filter = var_to_filter.replace(" start","+start")
+            var_to_filter = var_to_filter.replace(" start", "+start")
             var_to_filter = var_to_filter.replace(" START", "+START")
             var_to_filter = var_to_filter.replace(" complete", "+complete")
             var_to_filter = var_to_filter.replace(" COMPLETE", "+COMPLETE")

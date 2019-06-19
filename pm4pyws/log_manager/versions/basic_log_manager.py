@@ -26,6 +26,21 @@ class BasicLogSessionHandler(LogHandler):
 
         LogHandler.__init__(self, ex)
 
+    def remove_unneeded_sessions(self, all_sessions):
+        """
+        Remove expired sessions
+
+        Parameters
+        ------------
+        all_sessions
+            All valid sessions
+        """
+        shk = list(self.session_handlers.keys())
+        for session in shk:
+            if session not in all_sessions and (not str(session) == "null"):
+                print("removing handler for " + session)
+                del self.session_handlers[session]
+
     def get_handlers(self):
         """
         Gets the current set of handlers
@@ -130,11 +145,12 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
         if is_temporary:
-            curs_logs.execute("INSERT INTO EVENT_LOGS VALUES (?,?,1)", (basename, filepath))
+            curs_logs.execute("INSERT INTO EVENT_LOGS VALUES (?,?,1,0,1)", (basename, filepath))
         else:
-            curs_logs.execute("INSERT INTO EVENT_LOGS VALUES (?,?,0)", (basename, filepath))
+            curs_logs.execute("INSERT INTO EVENT_LOGS VALUES (?,?,0,1,1)", (basename, filepath))
         curs_logs.execute("INSERT INTO USER_LOG_VISIBILITY VALUES (?,?)", (user, basename))
         curs_logs.execute("INSERT INTO USER_LOG_DOWNLOADABLE VALUES (?,?)", (user, basename))
+        curs_logs.execute("INSERT INTO USER_LOG_REMOVAL VALUES (?,?)", (user, basename))
         conn_logs.commit()
         conn_logs.close()
 

@@ -6,17 +6,18 @@ from pm4py.visualization.align_table import factory as align_table_factory
 from pm4py.visualization.common.utils import get_base64_from_gviz
 from pm4py.visualization.petrinet import factory as pn_vis_factory
 from pm4py.visualization.petrinet.util import alignments_decoration
+from pm4py.objects.conversion.log import factory as log_conv_factory
 from copy import copy
 
 
-def perform_alignments(log, petri_string, parameters=None):
+def perform_alignments(df, petri_string, parameters=None):
     """
     Perform alignments
 
     Parameters
     ------------
-    log
-        Log
+    df
+        Dataframe
     net
         Petri net
     parameters
@@ -34,16 +35,21 @@ def perform_alignments(log, petri_string, parameters=None):
 
     net, im, fm = pnml.import_petri_from_string(petri_string, parameters=parameters)
 
-    parameters_align = copy(parameters)
+    parameters_conv = copy(parameters)
+    parameters_conv["return_variants"] = True
+    log, all_variants = log_conv_factory.apply(df, variant=log_conv_factory.DF_TO_EVENT_LOG_NV, parameters=parameters_conv)
+
+    parameters_align = {}
     parameters_align["ret_tuple_as_trans_desc"] = True
+    parameters_align["variants_idx"] = all_variants
 
     alignments = align_factory.apply(log, net, im, fm, parameters=parameters_align)
-    decorations = alignments_decoration.get_alignments_decoration(net, im, fm, aligned_traces=alignments, parameters=parameters)
+    decorations = alignments_decoration.get_alignments_decoration(net, im, fm, aligned_traces=alignments)
 
     gviz_on_petri = pn_vis_factory.apply(net, im, fm, aggregated_statistics=decorations, variant="alignments", parameters={"format": "svg"})
     svg_on_petri = get_base64_from_gviz(gviz_on_petri)
 
-    parameters_table = copy(parameters)
+    parameters_table = {}
     parameters_table["format"] = "svg"
 
     gviz_table = align_table_factory.apply(log, alignments, parameters=parameters_table)

@@ -25,7 +25,7 @@ if __name__ == "__main__":
         # otherwise, the service is not listening and it needs to be boot up
         print("service not listening, booting it up")
         S = PM4PyServices()
-        cursor_event_logs.execute("SELECT LOG_NAME, LOG_PATH FROM EVENT_LOGS")
+        cursor_event_logs.execute("SELECT LOG_NAME, LOG_PATH FROM EVENT_LOGS WHERE LOADED_BOOT = 1")
         for result in cursor_event_logs.fetchall():
             S.load_log(str(result[0]), str(result[1]))
 

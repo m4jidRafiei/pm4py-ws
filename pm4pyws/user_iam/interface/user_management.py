@@ -41,6 +41,11 @@ class UserManagement(object):
         """
         raise Exception("user_management check_session_validity not implemented!")
 
+    def clean_expired_sessions(self):
+        """
+        Cleans the expired sessions in IAM
+        """
+        raise Exception("user_management clean_expired_sessions not implemented!")
 
     def get_user_from_session(self, session_id):
         """
@@ -57,3 +62,16 @@ class UserManagement(object):
             User ID
         """
         raise Exception("user_management get_user_from_session not implemented!")
+
+    def get_all_sessions(self):
+        """
+        Gets all sessions from the users database
+
+        Returns
+        -----------
+        sessions
+            List of sessions
+        """
+
+        raise Exception("user_management get_all_sessions not implemented!")
+

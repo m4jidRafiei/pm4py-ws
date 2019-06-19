@@ -95,3 +95,21 @@ class KeycloakUserManagement(UserManagement):
             # traceback.print_exc()
             pass
         return user
+
+    def clean_expired_sessions(self):
+        """
+        Cleans the expired sessions in IAM
+        """
+        pass
+
+    def get_all_sessions(self):
+        """
+        Gets all sessions from the users database
+
+        Returns
+        -----------
+        sessions
+            List of sessions
+        """
+
+        return None
