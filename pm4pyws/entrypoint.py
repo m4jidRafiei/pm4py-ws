@@ -844,6 +844,31 @@ def get_attributes_list():
     return jsonify({"attributes_list": []})
 
 
+@PM4PyServices.app.route("/getTraceAttributes", methods=["GET"])
+def get_trace_attributes_list():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+    # reads the requested process name
+    process = request.args.get('process', default='receipt', type=str)
+
+    logging.info("get_attributes_list start session=" + str(session) + " process=" + str(process))
+
+    if check_session_validity(session):
+        user = get_user_from_session(session)
+        if lh.check_user_log_visibility(user, process):
+            attributes_list = sorted(
+                list(lh.get_handler_for_process_and_session(process, session).get_trace_attributes()))
+            logging.info(
+                "get_attributes_list complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
+
+            return jsonify({"attributes_list": attributes_list})
+
+    return jsonify({"attributes_list": []})
+
+
 @PM4PyServices.app.route("/getAttributeValues", methods=["GET"])
 def get_attribute_values():
     clean_expired_sessions()

@@ -561,3 +561,9 @@ class XesHandler(object):
         dfg = dfg_factory.apply(self.log, parameters={constants.PARAMETER_CONSTANT_ACTIVITY_KEY: attribute_key})
 
         return dfg
+
+
+    def get_trace_attributes(self):
+        trace_attr = attributes_filter.get_all_trace_attributes_from_log(self.log)
+
+        return trace_attr

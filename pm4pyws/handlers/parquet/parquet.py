@@ -682,3 +682,10 @@ class ParquetHandler(object):
         parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
         return get_align.perform_alignments(self.reduced_dataframe, petri_string, parameters=parameters)
+
+
+    def get_trace_attributes(self):
+        trace_attr = []
+
+        return trace_attr
+
