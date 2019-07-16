@@ -56,7 +56,8 @@ setup(
         'pyinstaller',
         'PyQT5',
         'setuptools',
-        'pm4pybpmn'
+        'pm4pybpmn',
+        'pp-role-mining'
     ],
     project_urls={
         'Documentation': 'http://pm4py.pads.rwth-aachen.de/documentation/',

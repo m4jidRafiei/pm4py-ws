@@ -11,6 +11,7 @@ RUN apt-get -y install zip unzip
 RUN pip install --no-cache-dir -U pm4py Flask flask-cors requests python-keycloak
 RUN pip install --no-cache-dir -U pyinstaller PyQT5 setuptools
 RUN pip install --no-cache-dir -U pm4pybpmn
+RUN pip install --no-cache-dir -U pp-role-mining
 COPY . /
 #RUN git submodule init
 #RUN git submodule update

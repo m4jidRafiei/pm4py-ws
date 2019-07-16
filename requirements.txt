@@ -7,3 +7,4 @@ pyinstaller
 PyQT5
 setuptools
 pm4pybpmn
+pp-role-mining
