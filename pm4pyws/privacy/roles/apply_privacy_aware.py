@@ -3,7 +3,7 @@ import random
 import string
 import sqlite3
 from pm4py.objects.log.exporter.xes import factory as xes_exporter
-
+from pm4pyws.handlers.xes.xes import XesHandler
 
 def generate_random_string(N):
     """
@@ -43,3 +43,9 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     curs_logs.execute("INSERT INTO EVENT_LOGS VALUES (?,?,0,1,1)", (new_log_name, new_log_path))
     conn_logs.commit()
     conn_logs.close()
+
+    handler = XesHandler()
+    handler.build_from_path(new_log_path)
+
+    log_manager.handlers[new_log_name] = handler
+
