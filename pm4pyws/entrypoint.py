@@ -1366,7 +1366,26 @@ def roles_privacy_aware():
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
 
+    no_substitutions = request.args.get('no_substitutions', default=2, type=int)
+    selective_lower_bound_applied = request.args.get('selective_lower_bound_applied', default=True, type=bool)
+    selective_upper_bound_applied = request.args.get('selective_upper_bound_applied', default=True, type=bool)
+    fixed_value = request.args.get('fixed_value', default=0, type=int) # fixed_value, selective, frequency_based
+    technique = request.args.get('technique', default='fixed_value', type=str)
+    resource_aware = request.args.get('resource_aware', default=True, type=bool)
+    hashed_activities = request.args.get('hashed_activities', default=True, type=bool)
+    event_attributes2remove = request.args.get('event_attributes2remove', default="", type=str).split("@@")
+    trace_attributes2remove = request.args.get('trace_attributes2remove', default="", type=str).split("@@")
+
     parameters = {}
+    parameters["no_substitutions"] = no_substitutions
+    parameters["selective_lower_bound_applied"] = selective_lower_bound_applied
+    parameters["selective_upper_bound_applied"] = selective_upper_bound_applied
+    parameters["fixed_value"] = fixed_value
+    parameters["technique"] = technique
+    parameters["resource_aware"] = resource_aware
+    parameters["hashed_activities"] = hashed_activities
+    parameters["event_attributes2remove"] = event_attributes2remove
+    parameters["trace_attributes2remove"] = trace_attributes2remove
 
     if check_session_validity(session):
         this_user = get_user_from_session(session)
@@ -1374,7 +1393,7 @@ def roles_privacy_aware():
 
         if is_admin:
             apply_privacy_aware.apply(process, lh.get_handler_for_process_and_session(process, session), lh, um, ex,
-                                parameters={})
+                                parameters=parameters)
             return jsonify({"status": "OK"})
 
     return jsonify({"status": "FAIL"})
