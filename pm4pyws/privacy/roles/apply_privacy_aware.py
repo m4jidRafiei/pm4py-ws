@@ -41,7 +41,6 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     event_attributes2remove = parameters["event_attributes2remove"]
     trace_attributes2remove = parameters["trace_attributes2remove"]
 
-    """
     print("no_substitutions=",no_substitutions)
     print("selective_lower_bound_applied=",selective_lower_bound_applied)
     print("selective_upper_bound_applied=",selective_upper_bound_applied)
@@ -51,7 +50,7 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     print("hashed_activities",hashed_activities)
     print("event_attributes2remove",event_attributes2remove)
     print("trace_attributes2remove",trace_attributes2remove)
-    input()"""
+    #input()
 
     # gets the event log object
     log = log_handler.log
