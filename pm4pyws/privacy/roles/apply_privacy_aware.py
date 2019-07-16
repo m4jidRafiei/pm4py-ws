@@ -5,7 +5,7 @@ import sqlite3
 from pm4py.objects.log.exporter.xes import factory as xes_exporter
 from pm4pyws.handlers.xes.xes import XesHandler
 from pp_role_mining.privacyPreserving import privacyPreserving
-
+from copy import deepcopy
 
 def generate_random_string(N):
     """
@@ -41,7 +41,8 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     event_attributes2remove = parameters["event_attributes2remove"]
     trace_attributes2remove = parameters["trace_attributes2remove"]
 
-    """print("no_substitutions=",no_substitutions)
+    """
+    print("no_substitutions=",no_substitutions)
     print("selective_lower_bound_applied=",selective_lower_bound_applied)
     print("selective_upper_bound_applied=",selective_upper_bound_applied)
     print("fixed_value=",fixed_value)
@@ -49,7 +50,8 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     print("resource_aware",resource_aware)
     print("hashed_activities",hashed_activities)
     print("event_attributes2remove",event_attributes2remove)
-    print("trace_attributes2remove",trace_attributes2remove)"""
+    print("trace_attributes2remove",trace_attributes2remove)
+    input()"""
 
     # gets the event log object
     log = log_handler.log
@@ -59,7 +61,7 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
 
     # xes_exporter.export_log(log, new_log_path)
 
-    pp = privacyPreserving(log)
+    pp = privacyPreserving(deepcopy(log))
     pp.apply_privacyPreserving(technique, resource_aware, True, False, hashed_activities,
                                NoSubstitutions=no_substitutions,
                                MinMax=[selective_lower_bound_applied, selective_upper_bound_applied],
