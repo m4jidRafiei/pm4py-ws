@@ -1357,6 +1357,11 @@ def check_versions():
 
 # PRIVACY SERVICES!
 
+def convert_str_to_bool(stri):
+    if stri.lower() == "true":
+        return True
+    return False
+
 @PM4PyServices.app.route("/rolesPrivacyAware", methods=["GET"])
 def roles_privacy_aware():
     clean_expired_sessions()
@@ -1367,23 +1372,23 @@ def roles_privacy_aware():
     process = request.args.get('process', default='receipt', type=str)
 
     no_substitutions = request.args.get('no_substitutions', default=2, type=int)
-    selective_lower_bound_applied = request.args.get('selective_lower_bound_applied', default=True, type=bool)
-    selective_upper_bound_applied = request.args.get('selective_upper_bound_applied', default=True, type=bool)
+    selective_lower_bound_applied = request.args.get('selective_lower_bound_applied', default="true", type=str)
+    selective_upper_bound_applied = request.args.get('selective_upper_bound_applied', default="true", type=str)
     fixed_value = request.args.get('fixed_value', default=0, type=int) # fixed_value, selective, frequency_based
     technique = request.args.get('technique', default='fixed_value', type=str)
-    resource_aware = request.args.get('resource_aware', default=True, type=bool)
-    hashed_activities = request.args.get('hashed_activities', default=True, type=bool)
+    resource_aware = request.args.get('resource_aware', default="true", type=str)
+    hashed_activities = request.args.get('hashed_activities', default="true", type=str)
     event_attributes2remove = request.args.get('event_attributes2remove', default="", type=str).split("@@")
     trace_attributes2remove = request.args.get('trace_attributes2remove', default="", type=str).split("@@")
 
     parameters = {}
     parameters["no_substitutions"] = no_substitutions
-    parameters["selective_lower_bound_applied"] = selective_lower_bound_applied
-    parameters["selective_upper_bound_applied"] = selective_upper_bound_applied
+    parameters["selective_lower_bound_applied"] = convert_str_to_bool(selective_lower_bound_applied)
+    parameters["selective_upper_bound_applied"] = convert_str_to_bool(selective_upper_bound_applied)
     parameters["fixed_value"] = fixed_value
     parameters["technique"] = technique
-    parameters["resource_aware"] = resource_aware
-    parameters["hashed_activities"] = hashed_activities
+    parameters["resource_aware"] = convert_str_to_bool(resource_aware)
+    parameters["hashed_activities"] = convert_str_to_bool(hashed_activities)
     parameters["event_attributes2remove"] = event_attributes2remove
     parameters["trace_attributes2remove"] = trace_attributes2remove
 
