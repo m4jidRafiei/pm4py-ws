@@ -1,4 +1,3 @@
-from pm4py.algo.discovery.dfg import factory as dfg_factory
 from pm4py.visualization.dfg import factory as dfg_vis_factory
 from pm4py.visualization.common.utils import get_base64_from_gviz
 from pm4py.algo.filtering.log.auto_filter import auto_filter
@@ -13,6 +12,9 @@ from pm4py.objects.petri.exporter.pnml import export_petri_as_string
 import base64
 
 from pm4pyws.util import constants
+
+from pm4py.algo.discovery.dfg import factory as dfg_factory
+from pm4py.algo.filtering.dfg.dfg_filtering import clean_dfg_based_on_noise_thresh
 
 def apply(log, parameters=None):
     """
@@ -37,6 +39,9 @@ def apply(log, parameters=None):
     if parameters is None:
         parameters = {}
 
+    decreasingFactor = parameters[
+        "decreasingFactor"] if "decreasingFactor" in parameters else constants.DEFAULT_DEC_FACTOR
+
     activity_key = parameters[pm4_constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if pm4_constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
 
     log = attributes_filter.filter_log_on_max_no_activities(log, max_no_activities=constants.MAX_NO_ACTIVITIES,
@@ -49,8 +54,14 @@ def apply(log, parameters=None):
     end_activities = list(end_activities_filter.get_end_activities(filtered_log, parameters=parameters).keys())
 
     dfg = dfg_factory.apply(filtered_log, parameters=parameters)
+    dfg = clean_dfg_based_on_noise_thresh(dfg, activities, decreasingFactor * constants.DEFAULT_DFG_CLEAN_MULTIPLIER,
+                                          parameters=parameters)
+
     parameters["format"] = "svg"
-    gviz = dfg_vis_factory.apply(dfg, log=log, variant="performance", parameters=parameters)
+    parameters["start_activities"] = start_activities
+    parameters["end_activities"] = end_activities
+
+    gviz = dfg_vis_factory.apply(dfg, log=filtered_log, variant="performance", parameters=parameters)
 
     gviz_base64 = base64.b64encode(str(gviz).encode('utf-8'))
 
@@ -58,4 +69,4 @@ def apply(log, parameters=None):
 
     net, im, fm = dfg_conv_factory.apply(dfg, parameters={"start_activities": start_activities, "end_activities": end_activities})
 
-    return get_base64_from_gviz(gviz), export_petri_as_string(net, im, fm), ".pnml", "xes", activities, start_activities, end_activities, gviz_base64, ret_graph
+    return get_base64_from_gviz(gviz), export_petri_as_string(net, im, fm), ".pnml", "xes", activities, start_activities, end_activities, gviz_base64, ret_graph, "dfg", "perf", None, "", activity_key

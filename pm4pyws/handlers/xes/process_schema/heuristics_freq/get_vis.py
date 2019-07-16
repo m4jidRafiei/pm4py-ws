@@ -36,6 +36,9 @@ def apply(log, parameters=None):
     if parameters is None:
         parameters = {}
 
+    decreasingFactor = parameters[
+        "decreasingFactor"] if "decreasingFactor" in parameters else constants.DEFAULT_DEC_FACTOR
+
     activity_key = parameters[pm4_constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if pm4_constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
 
     log = attributes_filter.filter_log_on_max_no_activities(log, max_no_activities=constants.MAX_NO_ACTIVITIES,
@@ -53,10 +56,11 @@ def apply(log, parameters=None):
 
     heu_net = HeuristicsNet(dfg_freq, activities=activities, start_activities=start_activities, end_activities=end_activities, activities_occurrences=activities_count)
 
-    heu_net.calculate()
+    heu_net.calculate(dfg_pre_cleaning_noise_thresh=constants.DEFAULT_DFG_CLEAN_MULTIPLIER * decreasingFactor)
 
     vis = heu_vis_factory.apply(heu_net, parameters={"format": "svg"})
+    vis2 = heu_vis_factory.apply(heu_net, parameters={"format": "dot"})
 
-    gviz_base64 = base64.b64encode("".encode('utf-8'))
+    gviz_base64 = get_base64_from_file(vis2.name)
 
-    return get_base64_from_file(vis.name), None, "", "xes", activities, start_activities, end_activities, gviz_base64, []
+    return get_base64_from_file(vis.name), None, "", "xes", activities, start_activities, end_activities, gviz_base64, [], "heuristics", "freq", None, "", activity_key

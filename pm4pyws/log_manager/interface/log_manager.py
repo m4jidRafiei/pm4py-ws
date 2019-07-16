@@ -3,6 +3,17 @@ class LogHandler(object):
         # exception handler
         self.ex = ex
 
+    def set_user_management(self, um):
+        """
+        Sets the user management
+
+        Parameters
+        ------------
+        um
+            User management
+        """
+        raise Exception("log_manager set_user_management not implemented!")
+
     def get_handlers(self):
         """
         Gets the current set of handlers
@@ -176,3 +187,30 @@ class LogHandler(object):
             Value
         """
         raise Exception("log_manager get_object_memory not implemented!")
+
+    def get_user_eventlog_vis_down_remov(self):
+        raise Exception("log_manager get_user_eventlog_vis_down_remov not implemented!")
+
+    def add_user_eventlog_visibility(self, user, event_log):
+        raise Exception("log_manager add_user_eventlog_visibility not implemented!")
+
+    def remove_user_eventlog_visibility(self, user, event_log):
+        raise Exception("log_manager remove_user_eventlog_visibility not implemented!")
+
+    def add_user_eventlog_downloadable(self, user, event_log):
+        raise Exception("log_manager add_user_eventlog_downloadable not implemented!")
+
+    def remove_user_eventlog_downloadable(self, user, event_log):
+        raise Exception("log_manager remove_user_eventlog_downloadable not implemented!")
+
+    def add_user_eventlog_removable(self, user, event_log):
+        raise Exception("log_manager add_user_eventlog_removable not implemented!")
+
+    def remove_user_eventlog_removable(self, user, event_log):
+        raise Exception("log_manager add_user_eventlog_removable not implemented!")
+
+    def check_log_is_removable(self, log):
+        raise Exception("log_manager check_log_is_removable not implemented!")
+
+    def can_delete(self, user, log):
+        raise Exception("log_manager can_delete not implemented!")

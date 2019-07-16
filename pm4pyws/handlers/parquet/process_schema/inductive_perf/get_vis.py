@@ -17,6 +17,8 @@ import base64
 
 from pm4pyws.util import constants
 
+from pm4py.algo.filtering.dfg.dfg_filtering import clean_dfg_based_on_noise_thresh
+
 def apply(dataframe, parameters=None):
     """
     Gets the Petri net through Inductive Miner, decorated by performance metric
@@ -40,6 +42,9 @@ def apply(dataframe, parameters=None):
     if parameters is None:
         parameters = {}
 
+    decreasingFactor = parameters[
+        "decreasingFactor"] if "decreasingFactor" in parameters else constants.DEFAULT_DEC_FACTOR
+
     activity_key = parameters[pm4_constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if pm4_constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
     timestamp_key = parameters[pm4_constants.PARAMETER_CONSTANT_TIMESTAMP_KEY] if pm4_constants.PARAMETER_CONSTANT_TIMESTAMP_KEY in parameters else xes.DEFAULT_TIMESTAMP_KEY
     case_id_glue = parameters[pm4_constants.PARAMETER_CONSTANT_CASEID_KEY] if pm4_constants.PARAMETER_CONSTANT_CASEID_KEY in parameters else CASE_CONCEPT_NAME
@@ -49,14 +54,18 @@ def apply(dataframe, parameters=None):
                                                                     max_no_activities=constants.MAX_NO_ACTIVITIES)
     dataframe, end_activities = auto_filter.apply_auto_filter(dataframe, parameters=parameters)
     end_activities = list(end_activities.keys())
-    dfg = df_statistics.get_dfg_graph(dataframe, activity_key=activity_key, timestamp_key=timestamp_key, case_id_glue=case_id_glue, sort_caseid_required=False, sort_timestamp_along_case_id=False)
     activities_count = attributes_filter.get_attribute_values(dataframe, activity_key, parameters=parameters)
     activities = list(activities_count.keys())
     start_activities = list(start_activities_filter.get_start_activities(dataframe, parameters=parameters).keys())
 
+    [dfg, dfg_perf] = df_statistics.get_dfg_graph(dataframe, activity_key=activity_key, timestamp_key=timestamp_key, case_id_glue=case_id_glue, sort_caseid_required=False, sort_timestamp_along_case_id=False, measure="both")
+    dfg = clean_dfg_based_on_noise_thresh(dfg, activities, decreasingFactor * constants.DEFAULT_DFG_CLEAN_MULTIPLIER,
+                                          parameters=parameters)
+    dfg_perf = {x: y for x, y in dfg_perf.items() if x in dfg}
+
     net, im, fm = inductive_miner.apply_dfg(dfg, parameters, activities=activities, start_activities=start_activities, end_activities=end_activities)
     spaths = get_shortest_paths(net)
-    aggregated_statistics = get_decorations_from_dfg_spaths_acticount(net, dfg, spaths,
+    aggregated_statistics = get_decorations_from_dfg_spaths_acticount(net, dfg_perf, spaths,
                                                                       activities_count,
                                                                       variant="performance")
     gviz = pn_vis_factory.apply(net, im, fm, parameters={"format": "svg"}, variant="performance",
@@ -66,4 +75,4 @@ def apply(dataframe, parameters=None):
 
     ret_graph = get_graph.get_graph_from_petri(net, im, fm)
 
-    return get_base64_from_gviz(gviz), export_petri_as_string(net, im, fm), ".pnml", "parquet", activities, start_activities, end_activities, gviz_base64, ret_graph
+    return get_base64_from_gviz(gviz), export_petri_as_string(net, im, fm), ".pnml", "parquet", activities, start_activities, end_activities, gviz_base64, ret_graph, "inductive", "perf", None, "", activity_key

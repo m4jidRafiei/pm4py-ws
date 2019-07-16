@@ -38,6 +38,9 @@ def apply(dataframe, parameters=None):
     if parameters is None:
         parameters = {}
 
+    decreasingFactor = parameters[
+        "decreasingFactor"] if "decreasingFactor" in parameters else ws_constants.DEFAULT_DEC_FACTOR
+
     activity_key = parameters[pm4_constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if pm4_constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
     timestamp_key = parameters[pm4_constants.PARAMETER_CONSTANT_TIMESTAMP_KEY] if pm4_constants.PARAMETER_CONSTANT_TIMESTAMP_KEY in parameters else xes.DEFAULT_TIMESTAMP_KEY
     case_id_glue = parameters[pm4_constants.PARAMETER_CONSTANT_CASEID_KEY] if pm4_constants.PARAMETER_CONSTANT_CASEID_KEY in parameters else CASE_CONCEPT_NAME
@@ -61,10 +64,11 @@ def apply(dataframe, parameters=None):
         dfg = df_statistics.get_dfg_graph(dataframe, case_id_glue=case_id_glue,
                                           activity_key=activity_key, sort_caseid_required=False, sort_timestamp_along_case_id=False)
         heu_net = HeuristicsNet(dfg, activities=activities, start_activities=start_activities, end_activities=end_activities, activities_occurrences=activities_count)
-    heu_net.calculate()
+    heu_net.calculate(dfg_pre_cleaning_noise_thresh=ws_constants.DEFAULT_DFG_CLEAN_MULTIPLIER * decreasingFactor)
 
     vis = heu_vis_factory.apply(heu_net, parameters={"format": "svg"})
+    vis2 = heu_vis_factory.apply(heu_net, parameters={"format": "dot"})
 
-    gviz_base64 = base64.b64encode("".encode('utf-8'))
+    gviz_base64 = get_base64_from_file(vis2.name)
 
-    return get_base64_from_file(vis.name), None, "", "parquet", activities, start_activities, end_activities, gviz_base64, []
+    return get_base64_from_file(vis.name), None, "", "parquet", activities, start_activities, end_activities, gviz_base64, [], "heuristics", "freq", None, "", activity_key

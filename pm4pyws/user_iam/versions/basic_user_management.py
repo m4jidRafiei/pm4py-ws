@@ -135,3 +135,28 @@ class BasicUserManagement(UserManagement):
                 sessions.append(str(result[0]))
         conn_users.close()
         return sessions
+
+    def get_all_users(self):
+        """
+        Possibly get all the users from the users database
+
+        Returns
+        -------------
+        users
+            List of users
+        """
+
+        users = []
+
+        conn_users = sqlite3.connect(self.user_db)
+        curs_users = conn_users.cursor()
+
+        cur = curs_users.execute("SELECT USER_ID, USER_ID FROM USERS")
+
+        for res in cur.fetchall():
+            users.append(str(res[0]))
+
+        conn_users.close()
+
+        return users
+

@@ -1,6 +1,6 @@
 A demo is publicly available at address (be careful!):
-http://212.237.8.106:5000/index.html
-using the username 'adminuser01' and the password 'adminuser01'
+http://80.211.142.26:5000/index.html
+using the username 'admin01' and the password 'admin01'
 
 HOW TO INSTALL FROM PIP:
 

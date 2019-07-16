@@ -75,3 +75,15 @@ class UserManagement(object):
 
         raise Exception("user_management get_all_sessions not implemented!")
 
+    def get_all_users(self):
+        """
+        Possibly get all the users from the users database
+
+        Returns
+        -------------
+        users
+            List of users
+        """
+
+        raise Exception("user_management get_all_users not implemented!")
+

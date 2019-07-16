@@ -1,6 +1,6 @@
 from pm4pyws.handlers.xes.filtering.versions import start_activities, end_activities, attributes_pos_trace, \
     attributes_neg_trace, attributes_pos_events, attributes_neg_events, variants, timestamp_events, \
-    timestamp_trace_containing, timestamp_trace_intersecting, case_performance_filter, numeric_attr_events, numeric_attr_traces
+    timestamp_trace_containing, timestamp_trace_intersecting, case_performance_filter, numeric_attr_events, numeric_attr_traces, paths_pos_trace, paths_neg_trace
 
 
 def apply(log, filter, parameters=None):
@@ -50,5 +50,9 @@ def apply(log, filter, parameters=None):
         return numeric_attr_traces.apply(log, filter, parameters=parameters)
     elif filter[0] == "numeric_attr_events":
         return numeric_attr_events.apply(log, filter, parameters=parameters)
+    elif filter[0] == "paths_pos_trace":
+        return paths_pos_trace.apply(log, filter, parameters=parameters)
+    elif filter[0] == "paths_neg_trace":
+        return paths_neg_trace.apply(log, filter, parameters=parameters)
 
     return log

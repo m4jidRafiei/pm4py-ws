@@ -12,12 +12,14 @@ from pm4pyws.configuration import Configuration
 from pm4pyws.log_manager import factory as session_manager_factory
 from pm4pyws.user_iam import factory as user_iam_factory
 from pm4pyws.requests_logging import factory as logging_factory
+from pm4pyws.util import constants
 
 import logging
 
 ex = logging_factory.apply()
-lh = session_manager_factory.apply(ex)
 um = user_iam_factory.apply(ex)
+lh = session_manager_factory.apply(ex)
+lh.set_user_management(um)
 
 
 class Commons:
@@ -144,6 +146,10 @@ def get_process_schema():
     session = request.args.get('session', type=str)
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
+
+    logging.info(
+        "get_process_schema start session=" + str(session) + " process=" + str(process))
+
     if check_session_validity(session):
         user = get_user_from_session(session)
         if lh.check_user_log_visibility(user, process):
@@ -154,7 +160,7 @@ def get_process_schema():
                 # reads the typeOfModel
                 type_of_model = request.args.get('typeOfModel', default='dfg', type=str)
                 # reads the simplicity
-                simplicity = request.args.get('simplicity', default=0.6, type=float)
+                simplicity = request.args.get('simplicity', default=constants.DEFAULT_DEC_FACTOR, type=float)
                 variant = type_of_model + "_" + decoration
                 parameters = {"decreasingFactor": simplicity}
                 handler = lh.get_handler_for_process_and_session(process, session)
@@ -171,21 +177,33 @@ def get_process_schema():
                     end_activities = saved_obj[6]
                     gviz_base64 = saved_obj[7]
                     graph_rep = saved_obj[8]
+                    type_of_model = saved_obj[9]
+                    decoration = saved_obj[10]
+                    second_model = saved_obj[11]
+                    second_format = saved_obj[12]
+                    activity_key = saved_obj[13]
                 else:
-                    base64, model, format, this_handler, activities, start_activities, end_activities, gviz_base64, graph_rep = handler.get_schema(
+                    base64, model, format, this_handler, activities, start_activities, end_activities, gviz_base64, graph_rep, type_of_model, decoration, second_model, second_format, activity_key = handler.get_schema(
                         variant=variant,
                         parameters=parameters)
                     lh.save_object_memory(ps_repr, [base64, model, format, this_handler, activities, start_activities,
-                                                    end_activities, gviz_base64, graph_rep])
+                                                    end_activities, gviz_base64, graph_rep, type_of_model, decoration,
+                                                    second_model, second_format, activity_key])
                 if model is not None:
                     model = model.decode('utf-8')
                 dictio = {"base64": base64.decode('utf-8'), "model": model, "format": format, "handler": this_handler,
                           "activities": activities,
                           "start_activities": start_activities, "end_activities": end_activities,
-                          "gviz_base64": gviz_base64.decode('utf-8'), "graph_rep": graph_rep}
+                          "gviz_base64": gviz_base64.decode('utf-8'), "graph_rep": graph_rep,
+                          "type_of_model": type_of_model, "decoration": decoration,
+                          "second_model": second_model, "second_format": second_format, "activity_key": activity_key}
             except:
                 logging.error(traceback.format_exc())
             Commons.semaphore_matplot.release()
+
+            logging.info(
+                "get_process_schema complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
     ret = jsonify(dictio)
     return ret
 
@@ -210,6 +228,10 @@ def get_numeric_attribute_graph():
     # reads the requested attribute
     attribute = request.args.get('attribute', type=str)
 
+    logging.info(
+        "get_numeric_attribute_graph start session=" + str(session) + " process=" + str(process) + " attribute=" + str(
+            attribute))
+
     dictio = {}
     if check_session_validity(session):
         user = get_user_from_session(session)
@@ -224,6 +246,11 @@ def get_numeric_attribute_graph():
                 logging.error(traceback.format_exc())
                 dictio = {"base64": "", "gviz_base64": "", "points": []}
             Commons.semaphore_matplot.release()
+
+        logging.info(
+            "get_numeric_attribute_graph start session=" + str(session) + " process=" + str(
+                process) + " attribute=" + str(
+                attribute) + " user=" + str(user))
 
     ret = jsonify(dictio)
     return ret
@@ -247,6 +274,8 @@ def get_case_duration():
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
 
+    logging.info("get_case_duration start session=" + str(session) + " process=" + str(process))
+
     dictio = {}
     if check_session_validity(session):
         user = get_user_from_session(session)
@@ -260,6 +289,9 @@ def get_case_duration():
                 logging.error(traceback.format_exc())
                 dictio = {"base64": "", "gviz_base64": "", "points": []}
             Commons.semaphore_matplot.release()
+
+        logging.info(
+            "get_case_duration start session=" + str(session) + " process=" + str(process) + " user=" + str(user))
 
     ret = jsonify(dictio)
     return ret
@@ -283,6 +315,8 @@ def get_events_per_time():
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
 
+    logging.info("get_events_per_time start session=" + str(session) + " process=" + str(process))
+
     dictio = {}
 
     if check_session_validity(session):
@@ -297,6 +331,9 @@ def get_events_per_time():
                 logging.error(traceback.format_exc())
                 dictio = {"base64": "", "gviz_base64": "", "points": []}
             Commons.semaphore_matplot.release()
+
+        logging.info(
+            "get_events_per_time complete session=" + str(session) + " process=" + str(process) + " user=" + str(user))
 
     ret = jsonify(dictio)
 
@@ -322,6 +359,8 @@ def get_sna():
         process = request.args.get('process', default='receipt', type=str)
         sna = ""
 
+        logging.info("get_sna start session=" + str(session) + " process=" + str(process))
+
         if check_session_validity(session):
             user = get_user_from_session(session)
             if lh.check_user_log_visibility(user, process):
@@ -329,6 +368,8 @@ def get_sna():
                 threshold = request.args.get('threshold', default=0.0, type=float)
                 sna = lh.get_handler_for_process_and_session(process, session).get_sna(variant=metric, parameters={
                     "weight_threshold": threshold})
+
+            logging.info("get_sna complete session=" + str(session) + " process=" + str(process) + " user=" + str(user))
     except:
         logging.error(traceback.format_exc())
         sna = ""
@@ -353,6 +394,8 @@ def get_all_variants():
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
 
+    logging.info("get_all_variants start session=" + str(session) + " process=" + str(process))
+
     dictio = {}
 
     if check_session_validity(session):
@@ -360,6 +403,9 @@ def get_all_variants():
         if lh.check_user_log_visibility(user, process):
             variants = lh.get_handler_for_process_and_session(process, session).get_variant_statistics()
             dictio = {"variants": variants}
+
+        logging.info(
+            "get_all_variants complete session=" + str(session) + " process=" + str(process) + " user=" + str(user))
 
     ret = jsonify(dictio)
 
@@ -383,6 +429,8 @@ def get_all_cases():
     process = request.args.get('process', default='receipt', type=str)
     variant = request.args.get('variant', type=str)
 
+    logging.info("get_events start session=" + str(session) + " process=" + str(process) + " variant=" + str(variant))
+
     dictio = {}
 
     if check_session_validity(session):
@@ -394,6 +442,11 @@ def get_all_cases():
             cases_list = lh.get_handler_for_process_and_session(process, session).get_case_statistics(
                 parameters=parameters)
             dictio = {"cases": cases_list}
+
+        logging.info(
+            "get_events complete session=" + str(session) + " process=" + str(process) + " variant=" + str(
+                variant) + " user=" + str(user))
+
     ret = jsonify(dictio)
     return ret
 
@@ -414,6 +467,8 @@ def get_events():
     session = request.args.get('session', type=str)
     process = request.args.get('process', default='receipt', type=str)
 
+    logging.info("get_events start session=" + str(session) + " process=" + str(process))
+
     dictio = {}
 
     if check_session_validity(session):
@@ -429,6 +484,9 @@ def get_events():
                         del events[i][key]
                 i = i + 1
             dictio = {"events": events}
+
+        logging.info("get_events complete session=" + str(session) + " process=" + str(process) + " user=" + str(user))
+
     ret = jsonify(dictio)
     return ret
 
@@ -445,6 +503,8 @@ def load_log_from_path():
             # reads the session
             session = request.args.get('session', type=str)
 
+            logging.info("load_log_from_path start session=" + str(session))
+
             if check_session_validity(session):
                 user = get_user_from_session(session)
 
@@ -455,6 +515,9 @@ def load_log_from_path():
                 parameters = request.json["parameters"] if "parameters" in request.json else None
                 print("log_name = ", log_name, "log_path = ", log_path)
                 lh.load_log_static(log_name, log_path, parameters=parameters)
+
+                logging.info("load_log_from_path complete session=" + str(session) + " user=" + str(user))
+
                 return "OK"
         except:
             logging.error(traceback.format_exc())
@@ -477,6 +540,8 @@ def get_logs_list():
     # reads the session
     session = request.args.get('session', type=str)
 
+    logging.info("get_logs_list start session=" + str(session))
+
     available_keys = []
 
     if check_session_validity(session):
@@ -487,6 +552,8 @@ def get_logs_list():
         for key in all_keys:
             if lh.check_user_log_visibility(user, key):
                 available_keys.append(key)
+
+        logging.info("get_logs_list complete session=" + str(session) + " user=" + str(user))
 
     return jsonify({"logs": available_keys})
 
@@ -506,6 +573,8 @@ def get_logs_list_advanced():
     # reads the session
     session = request.args.get('session', type=str)
 
+    logging.info("get_logs_list_advanced start session=" + str(session))
+
     available_keys = []
 
     if check_session_validity(session):
@@ -516,7 +585,10 @@ def get_logs_list_advanced():
         for key in all_keys:
             if lh.check_user_log_visibility(user, key):
                 can_download = lh.check_user_enabled_download(user, key)
-                available_keys.append({"log_name": key, "can_download": can_download})
+                can_delete = lh.can_delete(user, key)
+                available_keys.append({"log_name": key, "can_download": can_download, "can_delete": can_delete})
+
+        logging.info("get_logs_list_advanced start session=" + str(session) + " user=" + str(user))
 
     return jsonify({"logs": available_keys})
 
@@ -539,6 +611,8 @@ def do_transient_analysis():
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
 
+    logging.info("do_transient_analysis start session=" + str(session) + " process=" + str(process))
+
     dictio = {}
 
     if check_session_validity(session):
@@ -553,6 +627,10 @@ def do_transient_analysis():
             except:
                 logging.error(traceback.format_exc())
             Commons.semaphore_matplot.release()
+
+        logging.info(
+            "do_transient_analysis complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                user))
 
     ret = jsonify(dictio)
     return ret
@@ -575,6 +653,8 @@ def get_log_summary():
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
 
+    logging.info("get_log_summary start session=" + str(session) + " process=" + str(process))
+
     dictio = {}
 
     if check_session_validity(session):
@@ -593,7 +673,9 @@ def get_log_summary():
             dictio = {"this_variants_number": this_variants_number, "this_cases_number": this_cases_number,
                       "this_events_number": this_events_number, "ancestor_variants_number": ancestor_variants_number,
                       "ancestor_cases_number": ancestor_cases_number, "ancestor_events_number": ancestor_events_number}
-            print(dictio)
+
+        logging.info(
+            "get_log_summary complete session=" + str(session) + " process=" + str(process) + " user=" + str(user))
 
     ret = jsonify(dictio)
     return ret
@@ -615,13 +697,20 @@ def download_xes_log():
     session = request.args.get('session', type=str)
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
+
+    logging.info("download_xes_log start session=" + str(session) + " process=" + str(process))
+
     if Configuration.enable_download:
         if check_session_validity(session):
             user = get_user_from_session(session)
             if lh.check_user_log_visibility(user, process):
                 if lh.check_user_enabled_download(user, process):
                     content = lh.get_handler_for_process_and_session(process, session).download_xes_log()
+                    logging.info("download_xes_log complete session=" + str(session) + " process=" + str(
+                        process) + " user=" + str(user))
+
                     return jsonify({"content": content.decode('utf-8')})
+
         return jsonify({"content": ""})
 
 
@@ -641,13 +730,20 @@ def download_csv_log():
     session = request.args.get('session', type=str)
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
+
+    logging.info("download_csv_log start session=" + str(session) + " process=" + str(process))
+
     if Configuration.enable_download:
         if check_session_validity(session):
             user = get_user_from_session(session)
             if lh.check_user_log_visibility(user, process):
                 if lh.check_user_enabled_download(user, process):
                     content = lh.get_handler_for_process_and_session(process, session).download_csv_log()
+                    logging.info("download_csv_log complete session=" + str(session) + " process=" + str(
+                        process) + " user=" + str(user))
+
                     return jsonify({"content": content})
+
     return jsonify({"content": ""})
 
 
@@ -667,6 +763,9 @@ def get_start_activities():
     session = request.args.get('session', type=str)
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
+
+    logging.info("get_start_activities start session=" + str(session) + " process=" + str(process))
+
     if check_session_validity(session):
         user = get_user_from_session(session)
         if lh.check_user_log_visibility(user, process):
@@ -674,7 +773,12 @@ def get_start_activities():
             for entry in dictio:
                 dictio[entry] = int(dictio[entry])
             list_act = sorted([(x, y) for x, y in dictio.items()], key=lambda x: x[1], reverse=True)
+            logging.info(
+                "get_start_activities complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
+
             return jsonify({"startActivities": list_act})
+
     return jsonify({"startActivities": []})
 
 
@@ -694,6 +798,9 @@ def get_end_activities():
     session = request.args.get('session', type=str)
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
+
+    logging.info("get_end_activities start session=" + str(session) + " process=" + str(process))
+
     if check_session_validity(session):
         user = get_user_from_session(session)
         if lh.check_user_log_visibility(user, process):
@@ -701,7 +808,12 @@ def get_end_activities():
             for entry in dictio:
                 dictio[entry] = int(dictio[entry])
             list_act = sorted([(x, y) for x, y in dictio.items()], key=lambda x: x[1], reverse=True)
+            logging.info(
+                "get_end_activities complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
+
             return jsonify({"endActivities": list_act})
+
     return jsonify({"endActivities": []})
 
 
@@ -713,12 +825,20 @@ def get_attributes_list():
     session = request.args.get('session', type=str)
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
+
+    logging.info("get_attributes_list start session=" + str(session) + " process=" + str(process))
+
     if check_session_validity(session):
         user = get_user_from_session(session)
         if lh.check_user_log_visibility(user, process):
             attributes_list = sorted(
                 list(lh.get_handler_for_process_and_session(process, session).get_attributes_list()))
+            logging.info(
+                "get_attributes_list complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
+
             return jsonify({"attributes_list": attributes_list})
+
     return jsonify({"attributes_list": []})
 
 
@@ -730,6 +850,9 @@ def get_attribute_values():
     session = request.args.get('session', type=str)
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
+
+    logging.info("get_attribute_values start session=" + str(session) + " process=" + str(process))
+
     # reads the requested attribute
     attribute_key = request.args.get('attribute_key', type=str)
     if check_session_validity(session):
@@ -737,8 +860,41 @@ def get_attribute_values():
         if lh.check_user_log_visibility(user, process):
             dictio = lh.get_handler_for_process_and_session(process, session).get_attribute_values(attribute_key)
             list_values = sorted([(x, y) for x, y in dictio.items()], key=lambda x: x[1], reverse=True)
+            logging.info(
+                "get_attribute_values complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
+
             return jsonify({"attributeValues": list_values})
+
     return jsonify({"attributeValues": []})
+
+
+@PM4PyServices.app.route("/getAllPaths", methods=["GET"])
+def get_all_paths():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+    # reads the requested process name
+    process = request.args.get('process', default='receipt', type=str)
+
+    logging.info("get_all_paths start session=" + str(session) + " process=" + str(process))
+
+    # reads the requested attribute
+    attribute_key = request.args.get('attribute_key', type=str)
+
+    if check_session_validity(session):
+        user = get_user_from_session(session)
+        if lh.check_user_log_visibility(user, process):
+            dictio = lh.get_handler_for_process_and_session(process, session).get_paths(attribute_key)
+            list_values = sorted([("@@".join(x), y) for x, y in dictio.items()], key=lambda x: x[1], reverse=True)
+            logging.info(
+                "get_all_paths complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
+
+            return jsonify({"paths": list_values})
+
+    return jsonify({"paths": []})
 
 
 @PM4PyServices.app.route("/loginService", methods=["GET"])
@@ -770,6 +926,8 @@ def check_session_service():
         # reads the requested process name
         process = request.args.get('process', default=None, type=str)
 
+        logging.info("check_session_service start session=" + str(session) + " process=" + str(process))
+
         if check_session_validity(session):
             user = get_user_from_session(session)
             is_admin = lh.check_is_admin(user)
@@ -777,9 +935,17 @@ def check_session_service():
             if process is not None and not process == "null":
                 log_visibility = lh.check_user_log_visibility(user, process)
                 can_download = lh.check_user_enabled_download(user, process)
+
+                logging.info("check_session_service complete session=" + str(session) + " process=" + str(
+                    process) + " user=" + str(user))
+
                 return jsonify(
                     {"status": "OK", "sessionEnabled": True, "session": session, "user": user, "is_admin": is_admin,
                      "can_upload": can_upload, "log_visibility": log_visibility, "can_download": can_download})
+            logging.info(
+                "check_session_service complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
+
             return jsonify(
                 {"status": "OK", "sessionEnabled": True, "session": session, "user": user, "is_admin": is_admin,
                  "can_upload": can_upload})
@@ -800,6 +966,9 @@ def upload_log():
 
     # reads the session
     session = request.args.get('session', type=str)
+
+    logging.info("upload_log start session=" + str(session))
+
     if check_session_validity(session):
         user = get_user_from_session(session)
         if lh.check_user_enabled_upload(user):
@@ -821,6 +990,8 @@ def upload_log():
                         lh.manage_upload(user, basename, filepath, True)
                     else:
                         lh.manage_upload(user, basename, filepath, False)
+
+                    logging.info("upload_log complete session=" + str(session) + " user=" + str(user))
 
                     return jsonify({"status": "OK"})
             except:
@@ -847,6 +1018,8 @@ def get_alignments():
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
 
+    logging.info("get_alignments start session=" + str(session) + " process=" + str(process))
+
     dictio = {}
 
     if check_session_validity(session):
@@ -860,7 +1033,12 @@ def get_alignments():
                     parameters={})
                 dictio = {"petri": svg_on_petri.decode('utf-8'), "table": svg_table.decode('utf-8')}
             except:
+                logging.error(traceback.format_exc())
                 pass
+
+            logging.info(
+                "get_alignments complete session=" + str(session) + " process=" + str(process) + " user=" + str(user))
+
             Commons.semaphore_matplot.release()
 
     ret = jsonify(dictio)
@@ -885,6 +1063,8 @@ def add_filter():
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
 
+    logging.info("add_filter start session=" + str(session) + " process=" + str(process))
+
     if check_session_validity(session):
         user = get_user_from_session(session)
         if lh.check_user_log_visibility(user, process):
@@ -895,6 +1075,9 @@ def add_filter():
 
             new_handler = lh.get_handler_for_process_and_session(process, session).add_filter(filter, all_filters)
             lh.set_handler_for_process_and_session(process, session, new_handler)
+
+            logging.info("add_filter start session=" + str(session) + " process=" + str(process) + " user=" + str(user))
+
             return jsonify({"status": "OK"})
 
     return jsonify({"status": "FAIL"})
@@ -917,6 +1100,8 @@ def remove_filter():
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
 
+    logging.info("remove_filter start session=" + str(session) + " process=" + str(process))
+
     if check_session_validity(session):
         user = get_user_from_session(session)
         if lh.check_user_log_visibility(user, process):
@@ -928,6 +1113,216 @@ def remove_filter():
             new_handler = lh.get_handler_for_process_and_session(process, session).remove_filter(filter, all_filters)
             lh.set_handler_for_process_and_session(process, session, new_handler)
 
+            logging.info(
+                "remove_filter complete session=" + str(session) + " process=" + str(process) + " user=" + str(user))
+
             return jsonify({"status": "OK"})
 
     return jsonify({"status": "FAIL"})
+
+
+@PM4PyServices.app.route("/getUserEventLogVisibility", methods=["GET"])
+def get_user_log_visibilities():
+    clean_expired_sessions()
+
+    user_log_vis = {}
+
+    # reads the session
+    session = request.args.get('session', type=str)
+
+    logging.info("get_user_log_visibilities start session=" + str(session))
+
+    if check_session_validity(session):
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
+
+        if is_admin:
+            sorted_users, sorted_logs, user_log_vis = lh.get_user_eventlog_vis_down_remov()
+
+            logging.info("get_user_log_visibilities complete session=" + str(session) + " this_user=" + str(this_user))
+
+    return jsonify({"sorted_users": sorted_users, "sorted_logs": sorted_logs, "user_log_visibility": user_log_vis})
+
+
+@PM4PyServices.app.route("/addUserLogVisibility", methods=["GET"])
+def add_user_log_visibility():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+
+    logging.info("add_user_log_visibility start session=" + str(session))
+
+    if check_session_validity(session):
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
+
+        if is_admin:
+            user = request.args.get('user', type=str)
+            process = request.args.get('process', type=str)
+
+            lh.add_user_eventlog_visibility(user, process)
+
+            logging.info("add_user_log_visibility complete session=" + str(session) + " this_user=" + str(
+                this_user) + " user=" + str(user) + " process=" + str(process))
+
+    return jsonify({})
+
+
+@PM4PyServices.app.route("/removeUserLogVisibility", methods=["GET"])
+def remove_user_log_visibility():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+
+    logging.info("remove_user_log_visibility start session=" + str(session))
+
+    if check_session_validity(session):
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
+
+        if is_admin:
+            user = request.args.get('user', type=str)
+            process = request.args.get('process', type=str)
+
+            lh.remove_user_eventlog_visibility(user, process)
+
+            logging.info("remove_user_log_visibility complete session=" + str(session) + " this_user=" + str(
+                this_user) + " user=" + str(user) + " process=" + str(process))
+
+    return jsonify({})
+
+
+@PM4PyServices.app.route("/addUserLogDownloadable", methods=["GET"])
+def add_user_log_downloadable():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+
+    logging.info("add_user_log_downloadable start session=" + str(session))
+
+    if check_session_validity(session):
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
+
+        if is_admin:
+            user = request.args.get('user', type=str)
+            process = request.args.get('process', type=str)
+
+            lh.add_user_eventlog_downloadable(user, process)
+
+            logging.info("add_user_log_downloadable complete session=" + str(session) + " this_user=" + str(
+                this_user) + " user=" + str(user) + " process=" + str(process))
+
+    return jsonify({})
+
+
+@PM4PyServices.app.route("/removeUserLogDownloadable", methods=["GET"])
+def remove_user_log_downloadable():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+
+    logging.info("remove_user_log_downloadable start session=" + str(session))
+
+    if check_session_validity(session):
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
+
+        if is_admin:
+            user = request.args.get('user', type=str)
+            process = request.args.get('process', type=str)
+
+            lh.remove_user_eventlog_downloadable(user, process)
+
+            logging.info("remove_user_log_downloadable complete session=" + str(session) + " this_user=" + str(
+                this_user) + " user=" + str(user) + " process=" + str(process))
+
+    return jsonify({})
+
+
+@PM4PyServices.app.route("/addUserLogRemovable", methods=["GET"])
+def add_user_log_removable():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+
+    logging.info("add_user_log_removable start session=" + str(session))
+
+    if check_session_validity(session):
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
+
+        if is_admin:
+            user = request.args.get('user', type=str)
+            process = request.args.get('process', type=str)
+
+            lh.add_user_eventlog_removable(user, process)
+
+            logging.info("add_user_log_removable complete session=" + str(session) + " this_user=" + str(
+                this_user) + " user=" + str(user) + " process=" + str(process))
+
+    return jsonify({})
+
+
+@PM4PyServices.app.route("/removeUserLogRemovable", methods=["GET"])
+def remove_user_log_removable():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+
+    logging.info("remove_user_log_removable start session=" + str(session))
+
+    if check_session_validity(session):
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
+
+        if is_admin:
+            user = request.args.get('user', type=str)
+            process = request.args.get('process', type=str)
+
+            lh.remove_user_eventlog_removable(user, process)
+
+            logging.info("remove_user_log_removable complete session=" + str(session) + " this_user=" + str(
+                this_user) + " user=" + str(user) + " process=" + str(process))
+
+    return jsonify({})
+
+
+@PM4PyServices.app.route("/deleteEventLog", methods=["GET"])
+def deleteEventLog():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+    # reads the requested process name
+    process = request.args.get('process', default='receipt', type=str)
+
+    if check_session_validity(session):
+        user = get_user_from_session(session)
+
+        if lh.can_delete(user, process):
+            lh.delete_log(process)
+
+    return jsonify({})
+
+
+@PM4PyServices.app.route("/checkVersions", methods=["GET"])
+def check_versions():
+    clean_expired_sessions()
+
+    logging.info("check_versions start")
+
+    import pm4pyws
+    import pm4py
+    import pm4pybpmn
+
+    logging.info("check_versions complete")
+
+    return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__),
+            "pm4pybpmn": str(pm4pybpmn.__version__)}

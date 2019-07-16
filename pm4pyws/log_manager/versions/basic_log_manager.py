@@ -19,12 +19,25 @@ class BasicLogSessionHandler(LogHandler):
         self.objects_memory = {}
         self.objects_timestamp = {}
 
+        self.user_management = None
+
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
         curs_logs.execute("DELETE FROM EVENT_LOGS WHERE IS_TEMPORARY = 1")
         conn_logs.commit()
 
         LogHandler.__init__(self, ex)
+
+    def set_user_management(self, um):
+        """
+        Sets the user management
+
+        Parameters
+        ------------
+        um
+            User management
+        """
+        self.user_management = um
 
     def remove_unneeded_sessions(self, all_sessions):
         """
@@ -37,8 +50,8 @@ class BasicLogSessionHandler(LogHandler):
         """
         shk = list(self.session_handlers.keys())
         for session in shk:
-            if session not in all_sessions and (not str(session) == "null"):
-                print("removing handler for " + session)
+            if session not in all_sessions and (not str(session) == "null" and not str(session) == "None"):
+                print("removing handler for " + str(session))
                 del self.session_handlers[session]
 
     def get_handlers(self):
@@ -279,3 +292,218 @@ class BasicLogSessionHandler(LogHandler):
         if key in self.objects_memory:
             return self.objects_memory[key]
         return None
+
+    def get_user_eventlog_vis_down_remov(self):
+        conn_logs = sqlite3.connect(self.database_path)
+        curs_logs = conn_logs.cursor()
+
+        users = self.user_management.get_all_users()
+
+        admin_list = []
+        user_log_vis = {}
+        all_logs = set()
+
+        cur = curs_logs.execute("SELECT LOG_NAME, LOG_NAME FROM EVENT_LOGS")
+        for res in cur.fetchall():
+            all_logs.add(str(res[0]))
+
+        cur = curs_logs.execute("SELECT USER_ID, USER_ID FROM ADMINS")
+        for res in cur.fetchall():
+            admin_list.append(str(res[0]))
+
+        for user in users:
+            if user not in user_log_vis:
+                user_log_vis[user] = {}
+
+        cur = curs_logs.execute("SELECT USER_ID, USER_ID FROM OTHER_USERS")
+        for res in cur.fetchall():
+            user = str(res[0])
+            if user not in user_log_vis:
+                user_log_vis[user] = {}
+
+        cur = curs_logs.execute("SELECT USER_ID, LOG_NAME FROM USER_LOG_VISIBILITY")
+        for res in cur.fetchall():
+            user = str(res[0])
+            log = str(res[1])
+            if user not in user_log_vis:
+                user_log_vis[user] = {}
+            if log not in user_log_vis[user]:
+                user_log_vis[user][log] = {"visibility": False, "downloadable": False, "removable": False}
+            user_log_vis[user][log]["visibility"] = True
+
+        cur = curs_logs.execute("SELECT USER_ID, LOG_NAME FROM USER_LOG_DOWNLOADABLE")
+        for res in cur.fetchall():
+            user = str(res[0])
+            log = str(res[1])
+            if user not in user_log_vis:
+                user_log_vis[user] = {}
+            if log not in user_log_vis[user]:
+                user_log_vis[user][log] = {"visibility": False, "downloadable": False, "removable": False}
+            user_log_vis[user][log]["downloadable"] = True
+
+        cur = curs_logs.execute("SELECT USER_ID, LOG_NAME FROM USER_LOG_REMOVAL")
+        for res in cur.fetchall():
+            user = str(res[0])
+            log = str(res[1])
+            if user not in user_log_vis:
+                user_log_vis[user] = {}
+            if log not in user_log_vis[user]:
+                user_log_vis[user][log] = {"visibility": False, "downloadable": False, "removable": False}
+            user_log_vis[user][log]["removable"] = True
+
+        # remove admins
+        for adm in admin_list:
+            if adm in user_log_vis:
+                del user_log_vis[adm]
+
+        for user in user_log_vis:
+            for log in all_logs:
+                if log not in user_log_vis[user]:
+                    user_log_vis[user][log] = {"visibility": False, "downloadable": False, "removable": False}
+
+        sorted_users = sorted(list(user_log_vis.keys()))
+        sorted_logs = sorted(list(all_logs))
+
+        conn_logs.close()
+
+        return sorted_users, sorted_logs, user_log_vis
+
+    def add_user_eventlog_visibility(self, user, event_log):
+        print("start add_user_eventlog_visibility "+str(user)+" "+str(event_log))
+        conn_logs = sqlite3.connect(self.database_path)
+        curs_logs = conn_logs.cursor()
+
+        curs_logs.execute("DELETE FROM USER_LOG_VISIBILITY WHERE USER_ID = ? AND LOG_NAME = ?", (user, event_log))
+        curs_logs.execute("INSERT INTO USER_LOG_VISIBILITY VALUES (?,?)", (user, event_log))
+
+        conn_logs.commit()
+        conn_logs.close()
+
+        print("end add_user_eventlog_visibility "+str(user)+" "+str(event_log))
+
+
+    def remove_user_eventlog_visibility(self, user, event_log):
+        print("start remove_user_eventlog_visibility "+str(user)+" "+str(event_log))
+        conn_logs = sqlite3.connect(self.database_path)
+        curs_logs = conn_logs.cursor()
+
+        curs_logs.execute("DELETE FROM USER_LOG_VISIBILITY WHERE USER_ID = ? AND LOG_NAME = ?", (user, event_log))
+
+        conn_logs.commit()
+        conn_logs.close()
+        print("end remove_user_eventlog_visibility "+str(user)+" "+str(event_log))
+
+    def add_user_eventlog_downloadable(self, user, event_log):
+        print("start add_user_eventlog_downloadable "+str(user)+" "+str(event_log))
+        conn_logs = sqlite3.connect(self.database_path)
+        curs_logs = conn_logs.cursor()
+
+        curs_logs.execute("DELETE FROM USER_LOG_DOWNLOADABLE WHERE USER_ID = ? AND LOG_NAME = ?", (user, event_log))
+        curs_logs.execute("INSERT INTO USER_LOG_DOWNLOADABLE VALUES (?,?)", (user, event_log))
+
+        conn_logs.commit()
+        conn_logs.close()
+
+        print("end add_user_eventlog_downloadable "+str(user)+" "+str(event_log))
+
+    def remove_user_eventlog_downloadable(self, user, event_log):
+        print("start remove_user_eventlog_downloadable "+str(user)+" "+str(event_log))
+        conn_logs = sqlite3.connect(self.database_path)
+        curs_logs = conn_logs.cursor()
+
+        curs_logs.execute("DELETE FROM USER_LOG_DOWNLOADABLE WHERE USER_ID = ? AND LOG_NAME = ?", (user, event_log))
+
+        conn_logs.commit()
+        conn_logs.close()
+
+        print("end remove_user_eventlog_downloadable "+str(user)+" "+str(event_log))
+
+    def add_user_eventlog_removable(self, user, event_log):
+        print("start add_user_eventlog_removable "+str(user)+" "+str(event_log))
+        conn_logs = sqlite3.connect(self.database_path)
+        curs_logs = conn_logs.cursor()
+
+        curs_logs.execute("DELETE FROM USER_LOG_REMOVAL WHERE USER_ID = ? AND LOG_NAME = ?", (user, event_log))
+        curs_logs.execute("INSERT INTO USER_LOG_REMOVAL VALUES (?,?)", (user, event_log))
+
+        conn_logs.commit()
+        conn_logs.close()
+
+        print("end add_user_eventlog_removable "+str(user)+" "+str(event_log))
+
+    def remove_user_eventlog_removable(self, user, event_log):
+        print("start remove_user_eventlog_removable "+str(user)+" "+str(event_log))
+        conn_logs = sqlite3.connect(self.database_path)
+        curs_logs = conn_logs.cursor()
+
+        curs_logs.execute("DELETE FROM USER_LOG_REMOVAL WHERE USER_ID = ? AND LOG_NAME = ?", (user, event_log))
+
+        conn_logs.commit()
+        conn_logs.close()
+
+        print("end remove_user_eventlog_removable "+str(user)+" "+str(event_log))
+
+    def check_log_is_removable(self, log):
+        res = False
+        conn_logs = sqlite3.connect(self.database_path)
+        curs_logs = conn_logs.cursor()
+
+        curs_logs.execute("SELECT * FROM EVENT_LOGS WHERE LOG_NAME = ? AND LOG_NAME = ? AND CAN_REMOVED = 1",(log, log))
+
+        cur = curs_logs.fetchall()
+
+        if cur is not None:
+            for r in cur:
+                res = True
+                break
+
+        conn_logs.commit()
+        conn_logs.close()
+
+        return res
+
+    def can_delete(self, user, log):
+        res = False
+        is_admin = self.check_is_admin(user)
+        is_removable = self.check_log_is_removable(log)
+
+        if not is_removable:
+            return False
+
+        if is_admin:
+            res = True
+
+        conn_logs = sqlite3.connect(self.database_path)
+        curs_logs = conn_logs.cursor()
+
+        curs_logs.execute("SELECT * FROM USER_LOG_REMOVAL WHERE USER_ID = ? AND LOG_NAME = ?", (user, log))
+
+        cur = curs_logs.fetchall()
+
+        if cur is not None:
+            for r in cur:
+                res = True
+                break
+
+        conn_logs.commit()
+        conn_logs.close()
+
+        return res
+
+    def delete_log(self, log):
+        conn_logs = sqlite3.connect(self.database_path)
+        curs_logs = conn_logs.cursor()
+
+        curs_logs.execute("DELETE FROM EVENT_LOGS WHERE LOG_NAME = ? AND LOG_NAME = ?", (log,log))
+        curs_logs.execute("DELETE FROM USER_LOG_VISIBILITY WHERE LOG_NAME = ? AND LOG_NAME = ?", (log,log))
+        curs_logs.execute("DELETE FROM USER_LOG_REMOVAL WHERE LOG_NAME = ? AND LOG_NAME = ?", (log,log))
+        curs_logs.execute("DELETE FROM USER_LOG_DOWNLOADABLE WHERE LOG_NAME = ? AND LOG_NAME = ?", (log,log))
+
+        conn_logs.commit()
+        conn_logs.close()
+
+        del self.handlers[log]
+        for session in self.session_handlers:
+            if log in self.session_handlers[session]:
+                del self.session_handlers[session][log]
+

@@ -113,3 +113,16 @@ class KeycloakUserManagement(UserManagement):
         """
 
         return None
+
+    def get_all_users(self):
+        """
+        Possibly get all the users from the users database
+
+        Returns
+        -------------
+        users
+            List of users
+        """
+
+        return []
+

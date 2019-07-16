@@ -1,4 +1,4 @@
-from pm4py.algo.discovery.inductive import factory as inductive_miner
+from pm4py.algo.discovery.inductive.versions.dfg import imdfb as inductive_miner
 from pm4py.objects.petri.exporter.pnml import export_petri_as_string
 from pm4py.visualization.common.utils import get_base64_from_gviz
 from pm4py.visualization.petrinet import factory as pn_vis_factory
@@ -13,6 +13,10 @@ from pm4pyws.util import get_graph
 import base64
 
 from pm4pyws.util import constants
+
+from pm4py.algo.discovery.dfg import factory as dfg_factory
+from pm4py.algo.filtering.dfg.dfg_filtering import clean_dfg_based_on_noise_thresh
+
 
 def apply(log, parameters=None):
     """
@@ -37,6 +41,9 @@ def apply(log, parameters=None):
     if parameters is None:
         parameters = {}
 
+    decreasingFactor = parameters[
+        "decreasingFactor"] if "decreasingFactor" in parameters else constants.DEFAULT_DEC_FACTOR
+
     activity_key = parameters[pm4_constants.PARAMETER_CONSTANT_ACTIVITY_KEY] if pm4_constants.PARAMETER_CONSTANT_ACTIVITY_KEY in parameters else xes.DEFAULT_NAME_KEY
 
     # reduce the depth of the search done by token-based replay
@@ -54,9 +61,14 @@ def apply(log, parameters=None):
     start_activities = list(start_activities_filter.get_start_activities(filtered_log, parameters=parameters).keys())
     end_activities = list(end_activities_filter.get_end_activities(filtered_log, parameters=parameters).keys())
 
-    net, im, fm = inductive_miner.apply(filtered_log, parameters=parameters)
+    dfg = dfg_factory.apply(filtered_log, parameters=parameters)
+    dfg = clean_dfg_based_on_noise_thresh(dfg, activities, decreasingFactor * constants.DEFAULT_DFG_CLEAN_MULTIPLIER,
+                                          parameters=parameters)
+    net, im, fm = inductive_miner.apply_dfg(dfg, parameters=parameters, activities=activities,
+                                            start_activities=start_activities, end_activities=end_activities)
+
     parameters["format"] = "svg"
-    gviz = pn_vis_factory.apply(net, im, fm, log=log, variant="frequency", parameters=parameters)
+    gviz = pn_vis_factory.apply(net, im, fm, log=filtered_log, variant="frequency", parameters=parameters)
 
     svg = get_base64_from_gviz(gviz)
 
@@ -64,4 +76,4 @@ def apply(log, parameters=None):
 
     ret_graph = get_graph.get_graph_from_petri(net, im, fm)
 
-    return svg, export_petri_as_string(net, im, fm), ".pnml", "xes", activities, start_activities, end_activities, gviz_base64, ret_graph
+    return svg, export_petri_as_string(net, im, fm), ".pnml", "xes", activities, start_activities, end_activities, gviz_base64, ret_graph, "inductive", "freq", None, "", activity_key

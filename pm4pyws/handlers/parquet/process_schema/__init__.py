@@ -1,2 +1,2 @@
-from pm4pyws.handlers.parquet.process_schema import alpha_freq, alpha_performance, dfg_freq, dfg_perf, inductive_freq, \
-    inductive_perf, tree, util
+from pm4pyws.handlers.parquet.process_schema import dfg_freq, dfg_perf, inductive_freq, \
+    inductive_perf, indbpmn_freq, indbpmn_perf, tree, util
