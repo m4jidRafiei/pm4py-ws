@@ -1,4 +1,7 @@
 import os
+import random
+import string
+import sqlite3
 from pm4py.objects.log.exporter.xes import factory as xes_exporter
 
 
@@ -34,7 +37,7 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
 
     xes_exporter.export_log(log, new_log_path)
 
-    conn_logs = sqlite3.connect(self.database_path)
+    conn_logs = sqlite3.connect(log_manager.database_path)
     curs_logs = conn_logs.cursor()
 
     curs_logs.execute("INSERT INTO EVENT_LOGS VALUES (?,?,0,1,1)", (new_log_name, new_log_path))

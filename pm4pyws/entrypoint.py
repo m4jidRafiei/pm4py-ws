@@ -1336,21 +1336,20 @@ def check_versions():
 def roles_privacy_aware():
     clean_expired_sessions()
 
-    if Configuration.enable_session:
-        # reads the session
-        session = request.args.get('session', type=str)
-        # reads the requested process name
-        process = request.args.get('process', default='receipt', type=str)
+    # reads the session
+    session = request.args.get('session', type=str)
+    # reads the requested process name
+    process = request.args.get('process', default='receipt', type=str)
 
-        parameters = {}
+    parameters = {}
 
-        if check_session_validity(session):
-            this_user = get_user_from_session(session)
-            is_admin = lh.check_is_admin(this_user)
+    if check_session_validity(session):
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
 
-            if is_admin:
-                apply_privacy_aware(process, lh.get_handler_for_process_and_session(process, session), lh, um, ex,
-                                    parameters={})
-                return jsonify({"status": "OK"})
+        if is_admin:
+            apply_privacy_aware.apply(process, lh.get_handler_for_process_and_session(process, session), lh, um, ex,
+                                parameters={})
+            return jsonify({"status": "OK"})
 
     return jsonify({"status": "FAIL"})
