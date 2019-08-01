@@ -1393,12 +1393,19 @@ def roles_privacy_aware():
     parameters["trace_attributes2remove"] = trace_attributes2remove
 
     if check_session_validity(session):
+        logging.error("session "+str(session)+" is valid")
         this_user = get_user_from_session(session)
         is_admin = lh.check_is_admin(this_user)
+
+        logging.error("this_user = "+str(this_user))
+        logging.error("is_admin = "+str(is_admin))
 
         if is_admin:
             apply_privacy_aware.apply(process, lh.get_handler_for_process_and_session(process, session), lh, um, ex,
                                 parameters=parameters)
+
+            logging.error("is_admin")
+
             return jsonify({"status": "OK"})
 
     return jsonify({"status": "FAIL"})
