@@ -1,5 +1,10 @@
 import requests
 
+try:
+    import pm4pycvxopt
+except:
+    pass
+
 from pm4pyws.entrypoint import PM4PyServices
 
 import sqlite3

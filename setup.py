@@ -49,6 +49,7 @@ setup(
     license='GPL 3.0',
     install_requires=[
         'pm4py',
+        'pm4pycvxopt',
         'Flask',
         'flask-cors',
         'requests',
