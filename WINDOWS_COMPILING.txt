@@ -1,3 +1,6 @@
+Install packages to build: pip install pyinstaller PyQT5
+
+
 (0) Procedure to do once in a life-time:
 
 In the Anaconda3 folder under Lib\site-packages\PyInstaller\utils\hooks\qt.py

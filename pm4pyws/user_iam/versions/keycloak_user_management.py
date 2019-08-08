@@ -1,5 +1,3 @@
-from keycloak import KeycloakOpenID
-
 from pm4pyws.user_iam.interface.user_management import UserManagement
 
 import traceback
@@ -7,6 +5,8 @@ import traceback
 
 class KeycloakUserManagement(UserManagement):
     def __init__(self, ex, parameters=None):
+        from keycloak import KeycloakOpenID
+
         if parameters is None:
             parameters = {}
         self.ex = ex

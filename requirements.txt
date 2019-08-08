@@ -1,10 +1,4 @@
 pm4py
 Flask
 flask-cors
-requests
-python-keycloak
-pyinstaller
-PyQT5
 setuptools
-pm4pycvxopt
-pm4pybpmn

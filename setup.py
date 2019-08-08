@@ -49,15 +49,9 @@ setup(
     license='GPL 3.0',
     install_requires=[
         'pm4py',
-        'pm4pycvxopt',
         'Flask',
         'flask-cors',
-        'requests',
-        'python-keycloak',
-        'pyinstaller',
-        'PyQT5',
-        'setuptools',
-        'pm4pybpmn'
+        'setuptools'
     ],
     project_urls={
         'Documentation': 'http://pm4py.pads.rwth-aachen.de/documentation/',

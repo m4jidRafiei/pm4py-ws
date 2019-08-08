@@ -5,3 +5,4 @@ enable_session = False
 upload_as_temporary = True
 session_duration = 86400
 static_folder = '../webapp2/dist'
+enable_bpmn = False
