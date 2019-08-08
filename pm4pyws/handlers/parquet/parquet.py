@@ -26,7 +26,6 @@ from pm4py.algo.discovery.dfg.adapters.pandas import df_statistics
 from pm4py.objects.log.util.xes import DEFAULT_NAME_KEY, DEFAULT_TIMESTAMP_KEY
 
 from pm4pyws.util import format_recognition
-from pm4pyws.util.encoding_recognition import predict_encoding
 from pm4pyws.util.columns_recognition import assign_column_correspondence
 
 import pandas as pd
@@ -142,16 +141,14 @@ class ParquetHandler(object):
             constants.PARAMETER_CONSTANT_CASEID_KEY] if constants.PARAMETER_CONSTANT_CASEID_KEY in parameters else None
 
         recognized_format = format_recognition.get_format_from_csv(path)
-        recognized_encoding = predict_encoding(path)
 
         sep = parameters["sep"] if "sep" in parameters else recognized_format.delimiter
         quotechar = parameters["quotechar"] if "quotechar" in parameters else recognized_format.quotechar
 
         if quotechar is not None:
-            self.dataframe = csv_import_adapter.import_dataframe_from_path(path, sep=sep, quotechar=quotechar,
-                                                                           encoding=recognized_encoding)
+            self.dataframe = csv_import_adapter.import_dataframe_from_path(path, sep=sep, quotechar=quotechar)
         else:
-            self.dataframe = csv_import_adapter.import_dataframe_from_path(path, sep=sep, encoding=recognized_encoding)
+            self.dataframe = csv_import_adapter.import_dataframe_from_path(path, sep=sep)
 
         case_id_glue, activity_key, timestamp_key = assign_column_correspondence(self.dataframe)
 

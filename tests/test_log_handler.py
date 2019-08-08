@@ -11,8 +11,6 @@ def basic_test(path):
     handler.get_schema(variant="dfg_perf")
     handler.get_schema(variant="inductive_freq")
     handler.get_schema(variant="inductive_perf")
-    handler.get_schema(variant="indbpmn_freq")
-    handler.get_schema(variant="indbpmn_perf")
     handler.get_schema(variant="heuristics_freq")
     handler.get_schema(variant="heuristics_perf")
     handler.get_schema(variant="tree_freq")
