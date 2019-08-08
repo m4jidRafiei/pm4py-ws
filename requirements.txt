@@ -1,5 +1,4 @@
 pm4py
-pm4pycvxopt
 Flask
 flask-cors
 requests
@@ -7,4 +6,5 @@ python-keycloak
 pyinstaller
 PyQT5
 setuptools
+pm4pycvxopt
 pm4pybpmn

@@ -8,7 +8,7 @@ from threading import Semaphore
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from pm4pyws.configuration import Configuration
+from pm4pyws import configuration as Configuration
 from pm4pyws.log_manager import factory as session_manager_factory
 from pm4pyws.user_iam import factory as user_iam_factory
 from pm4pyws.requests_logging import factory as logging_factory
@@ -101,7 +101,7 @@ def get_user_from_session(session_id):
 
 
 class PM4PyServices:
-    app = Flask(__name__, static_url_path='', static_folder='../webapp2/dist')
+    app = Flask(__name__, static_url_path='', static_folder=Configuration.static_folder)
     app.add_url_rule(app.static_url_path + '/<path:filename>', endpoint='static',
                      view_func=app.send_static_file)
     CORS(app)
@@ -1141,8 +1141,9 @@ def get_user_log_visibilities():
 
             logging.info("get_user_log_visibilities complete session=" + str(session) + " this_user=" + str(this_user))
 
-    return jsonify({"sorted_users": sorted_users, "sorted_logs": sorted_logs, "user_log_visibility": user_log_vis})
+            return jsonify({"success": True, "sorted_users": sorted_users, "sorted_logs": sorted_logs, "user_log_visibility": user_log_vis})
 
+    return jsonify({"success": False})
 
 @PM4PyServices.app.route("/addUserLogVisibility", methods=["GET"])
 def add_user_log_visibility():
@@ -1166,7 +1167,9 @@ def add_user_log_visibility():
             logging.info("add_user_log_visibility complete session=" + str(session) + " this_user=" + str(
                 this_user) + " user=" + str(user) + " process=" + str(process))
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/removeUserLogVisibility", methods=["GET"])
@@ -1191,7 +1194,9 @@ def remove_user_log_visibility():
             logging.info("remove_user_log_visibility complete session=" + str(session) + " this_user=" + str(
                 this_user) + " user=" + str(user) + " process=" + str(process))
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/addUserLogDownloadable", methods=["GET"])
@@ -1216,7 +1221,9 @@ def add_user_log_downloadable():
             logging.info("add_user_log_downloadable complete session=" + str(session) + " this_user=" + str(
                 this_user) + " user=" + str(user) + " process=" + str(process))
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/removeUserLogDownloadable", methods=["GET"])
@@ -1241,7 +1248,9 @@ def remove_user_log_downloadable():
             logging.info("remove_user_log_downloadable complete session=" + str(session) + " this_user=" + str(
                 this_user) + " user=" + str(user) + " process=" + str(process))
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/addUserLogRemovable", methods=["GET"])
@@ -1266,7 +1275,9 @@ def add_user_log_removable():
             logging.info("add_user_log_removable complete session=" + str(session) + " this_user=" + str(
                 this_user) + " user=" + str(user) + " process=" + str(process))
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/removeUserLogRemovable", methods=["GET"])
@@ -1291,7 +1302,9 @@ def remove_user_log_removable():
             logging.info("remove_user_log_removable complete session=" + str(session) + " this_user=" + str(
                 this_user) + " user=" + str(user) + " process=" + str(process))
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/deleteEventLog", methods=["GET"])
@@ -1309,7 +1322,9 @@ def deleteEventLog():
         if lh.can_delete(user, process):
             lh.delete_log(process)
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/checkVersions", methods=["GET"])

@@ -1,30 +1,28 @@
-FROM nikolaik/python-nodejs
+FROM tiangolo/uwsgi-nginx-flask
 
 RUN apt-get update
 RUN apt-get -y upgrade
-RUN apt-get -y install nano vim
-RUN apt-get -y install git
-RUN apt-get -y install python3-pydot python-pydot python-pydot-ng graphviz
-RUN apt-get -y install python3-tk
-RUN apt-get -y install zip unzip
+RUN apt-get -y install nano vim git python3-pydot python-pydot python-pydot-ng graphviz python3-tk zip unzip curl ftp fail2ban
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash
+RUN apt-get install nodejs
 
-RUN pip install --no-cache-dir -U pm4py pm4pycvxopt Flask flask-cors requests python-keycloak
-RUN pip install --no-cache-dir -U pyinstaller PyQT5 setuptools
-RUN pip install --no-cache-dir -U pm4pybpmn
-COPY . /
-#RUN cd /webapp2 && git checkout master && git pull
-RUN mkdir -p /webapp2
-RUN rm -rRf /webapp2
-RUN git clone https://github.com/pm-tk/source.git
-RUN mv /source /webapp2
-#RUN cd /webapp2 && npm install
-#RUN cd /webapp2 && npm install --save-dev --unsafe-perm node-sass
-#RUN cd /webapp2 && npm install -g @angular/cli
-#RUN cd /webapp2 && npm install -g @angular/material
-#RUN cd /webapp2 && ng build --prod
-RUN cd /webapp2 && wget http://www.alessandroberti.it/dist.tar && tar xvf dist.tar
-RUN python setup.py install
+COPY ./docker-sec-confs/sysctl.conf /etc/sysctl.conf
+COPY ./docker-sec-confs/limits.conf /etc/security/limits.conf
+COPY ./docker-sec-confs/nginx.conf /etc/nginx/nginx.conf
+COPY ./docker-sec-confs/jail.local /etc/fail2ban/jail.local
 
-ENTRYPOINT ["python", "main.py"]
+RUN pip install --no-cache-dir -U pm4py Flask flask-cors requests python-keycloak pyinstaller PyQT5 setuptools pm4pybpmn
+RUN pip install --no-cache-dir -U pm4pycvxopt pm4pybpmn
+COPY . /app
+RUN echo "enable_session = True" >> /app/pm4pyws/configuration.py
+RUN echo "static_folder = '/app/webapp2/dist'" >> /app/pm4pyws/configuration.py
+RUN mkdir -p /app/webapp2
+RUN rm -rRf /app/webapp2
+RUN cd / && git clone https://github.com/pm-tk/source.git
+RUN cd / && mv /source /app/webapp2
+RUN cd /app/webapp2 && npm install && npm install --save-dev --unsafe-perm node-sass && npm install -g @angular/core @angular/cli @angular/material
+RUN cd /app/webapp2 && ng build --prod
 
-EXPOSE 5000
+#RUN cd /app/webapp2 && wget http://www.alessandroberti.it/dist.tar && tar xvf dist.tar
+
+RUN cd /app && python setup.py install

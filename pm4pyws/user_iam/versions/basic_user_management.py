@@ -3,7 +3,7 @@ import uuid
 
 from pm4pyws.user_iam.interface.user_management import UserManagement
 
-from pm4pyws.configuration import Configuration
+from pm4pyws import configuration as Configuration
 
 class BasicUserManagement(UserManagement):
     def __init__(self, ex, parameters=None):

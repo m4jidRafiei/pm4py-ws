@@ -1,6 +1,6 @@
 import sqlite3
 
-from pm4pyws.configuration import Configuration
+from pm4pyws import configuration as Configuration
 from pm4pyws.handlers.parquet.parquet import ParquetHandler
 from pm4pyws.handlers.xes.xes import XesHandler
 from pm4pyws.log_manager.interface.log_manager import LogHandler

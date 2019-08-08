@@ -21,7 +21,7 @@ npm install -g @angular/cli
 npm install -g @angular/material
 
 
-PM4Py Web Services along with an Angular7 web interface
+PM4Py Web Services along with an Angular7(-8) web interface
 
 
 To install the required NPM dependencies (also for building) enter the webapp/ folder and use the following command:
