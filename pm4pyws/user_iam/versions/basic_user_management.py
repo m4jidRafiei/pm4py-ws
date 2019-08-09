@@ -4,7 +4,8 @@ import hashlib
 
 from pm4pyws.user_iam.interface.user_management import UserManagement
 
-from pm4pyws import configuration as Configuration
+from pm4pywsconfiguration import configuration as Configuration
+
 
 class BasicUserManagement(UserManagement):
     def __init__(self, ex, parameters=None):
@@ -101,7 +102,8 @@ class BasicUserManagement(UserManagement):
         expired_sessions = []
 
         curs_users.execute(
-            "SELECT SESSION_ID FROM SESSIONS WHERE Cast ((JulianDay(datetime('now')) - JulianDay(CREATION_DATE)) * 24 * 60 * 60 As Integer) >= "+str(Configuration.session_duration))
+            "SELECT SESSION_ID FROM SESSIONS WHERE Cast ((JulianDay(datetime('now')) - JulianDay(CREATION_DATE)) * 24 * 60 * 60 As Integer) >= "+str(
+                Configuration.session_duration))
         results = curs_users.fetchall()
         if results is not None:
             for result in results:

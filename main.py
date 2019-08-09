@@ -5,7 +5,7 @@ except:
 
 
 from pm4pyws.entrypoint import PM4PyServices
-from pm4pyws import configuration as Configuration
+from pm4pywsconfiguration import configuration as Configuration
 
 app = PM4PyServices.app
 

@@ -1,7 +1,7 @@
 from pm4pyws.handlers.xes.process_schema import dfg_freq, dfg_perf, inductive_freq, \
     inductive_perf, heuristics_freq, util
 
-from pm4pyws import configuration as Configuration
+from pm4pywsconfiguration import configuration as Configuration
 
 try:
     import pm4pybpmn

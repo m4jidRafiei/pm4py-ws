@@ -44,7 +44,7 @@ setup(
               'pm4pyws.handlers.parquet.process_schema.heuristics_perf', 'pm4pyws.user_iam',
               'pm4pyws.user_iam.versions', 'pm4pyws.user_iam.interface', 'pm4pyws.log_manager',
               'pm4pyws.log_manager.versions', 'pm4pyws.log_manager.interface', 'pm4pyws.requests_logging',
-              'pm4pyws.requests_logging.versions', 'pm4pyws.requests_logging.interface'],
+              'pm4pyws.requests_logging.versions', 'pm4pyws.requests_logging.interface', 'pm4pywsconfiguration'],
     url='http://www.pm4py.org',
     license='GPL 3.0',
     install_requires=[

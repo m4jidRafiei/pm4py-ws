@@ -1,6 +1,6 @@
 import logging
 from pm4pyws.requests_logging.interface.logginghandler import LoggingHandler
-from pm4pyws import configuration as Configuration
+from pm4pywsconfiguration import configuration as Configuration
 
 
 class BasicLoggingHandler(LoggingHandler):
