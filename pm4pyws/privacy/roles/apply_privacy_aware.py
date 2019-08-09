@@ -7,7 +7,7 @@ from pm4pyws.handlers.xes.xes import XesHandler
 from pp_role_mining.privacyPreserving import privacyPreserving
 from copy import deepcopy
 
-from pm4pyws import configuration as Configuration
+from pm4pywsconfiguration import configuration as Configuration
 
 
 def generate_random_string(N):
