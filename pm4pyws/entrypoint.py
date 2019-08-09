@@ -1143,9 +1143,11 @@ def get_user_log_visibilities():
 
             logging.info("get_user_log_visibilities complete session=" + str(session) + " this_user=" + str(this_user))
 
-            return jsonify({"success": True, "sorted_users": sorted_users, "sorted_logs": sorted_logs, "user_log_visibility": user_log_vis})
+            return jsonify({"success": True, "sorted_users": sorted_users, "sorted_logs": sorted_logs,
+                            "user_log_visibility": user_log_vis})
 
     return jsonify({"success": False})
+
 
 @PM4PyServices.app.route("/addUserLogVisibility", methods=["GET"])
 def add_user_log_visibility():
@@ -1355,6 +1357,7 @@ def convert_str_to_bool(stri):
         return True
     return False
 
+
 @PM4PyServices.app.route("/rolesPrivacyAware", methods=["GET"])
 def roles_privacy_aware():
     clean_expired_sessions()
@@ -1367,7 +1370,7 @@ def roles_privacy_aware():
     no_substitutions = request.args.get('no_substitutions', default=2, type=int)
     selective_lower_bound_applied = request.args.get('selective_lower_bound_applied', default="true", type=str)
     selective_upper_bound_applied = request.args.get('selective_upper_bound_applied', default="true", type=str)
-    fixed_value = request.args.get('fixed_value', default=0, type=int) # fixed_value, selective, frequency_based
+    fixed_value = request.args.get('fixed_value', default=0, type=int)  # fixed_value, selective, frequency_based
     technique = request.args.get('technique', default='fixed_value', type=str)
     resource_aware = request.args.get('resource_aware', default="true", type=str)
     hashed_activities = request.args.get('hashed_activities', default="true", type=str)
@@ -1386,19 +1389,44 @@ def roles_privacy_aware():
     parameters["trace_attributes2remove"] = trace_attributes2remove
 
     if check_session_validity(session):
-        logging.error("session "+str(session)+" is valid")
+        logging.error("session " + str(session) + " is valid")
         this_user = get_user_from_session(session)
         is_admin = lh.check_is_admin(this_user)
 
-        logging.error("this_user = "+str(this_user))
-        logging.error("is_admin = "+str(is_admin))
+        logging.error("this_user = " + str(this_user))
+        logging.error("is_admin = " + str(is_admin))
 
         if is_admin:
             apply_privacy_aware.apply(process, lh.get_handler_for_process_and_session(process, session), lh, um, ex,
-                                parameters=parameters)
+                                      parameters=parameters)
 
             logging.error("is_admin")
 
             return jsonify({"status": "OK"})
 
     return jsonify({"status": "FAIL"})
+
+
+@PM4PyServices.app.route("/getTraceAttributes", methods=["GET"])
+def get_trace_attributes_list():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+    # reads the requested process name
+    process = request.args.get('process', default='receipt', type=str)
+
+    logging.info("get_attributes_list start session=" + str(session) + " process=" + str(process))
+
+    if check_session_validity(session):
+        user = get_user_from_session(session)
+        if lh.check_user_log_visibility(user, process):
+            attributes_list = sorted(
+                list(lh.get_handler_for_process_and_session(process, session).get_trace_attributes()))
+            logging.info(
+                "get_attributes_list complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
+
+            return jsonify({"attributes_list": attributes_list})
+
+    return jsonify({"attributes_list": []})
