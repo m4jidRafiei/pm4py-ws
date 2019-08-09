@@ -15,8 +15,8 @@ RUN pip install --no-cache-dir -U pm4py Flask flask-cors setuptools
 RUN pip install --no-cache-dir -U pm4pycvxopt
 #RUN pip install --no-cache-dir -U pm4pybpmn
 COPY . /app
-RUN echo "enable_session = True" >> /app/pm4pyws/configuration.py
-RUN echo "static_folder = '/app/webapp2/dist'" >> /app/pm4pyws/configuration.py
+RUN echo "enable_session = True" >> /app/pm4pywsconfiguration/configuration.py
+RUN echo "static_folder = '/app/webapp2/dist'" >> /app/pm4pywsconfiguration/configuration.py
 
 RUN mkdir -p /app/webapp2
 RUN rm -rRf /app/webapp2
