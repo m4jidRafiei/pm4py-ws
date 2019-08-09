@@ -11,7 +11,7 @@ import time
 class BasicLogSessionHandler(LogHandler):
     def __init__(self, ex):
         # path to the database
-        self.database_path = "event_logs.db"
+        self.database_path = Configuration.event_log_db_path
 
         self.handlers = {}
         self.session_handlers = {}

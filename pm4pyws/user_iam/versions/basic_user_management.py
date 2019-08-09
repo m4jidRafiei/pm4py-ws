@@ -1,5 +1,6 @@
 import sqlite3
 import uuid
+import hashlib
 
 from pm4pyws.user_iam.interface.user_management import UserManagement
 
@@ -7,7 +8,7 @@ from pm4pyws import configuration as Configuration
 
 class BasicUserManagement(UserManagement):
     def __init__(self, ex, parameters=None):
-        self.user_db = "users.db"
+        self.user_db = Configuration.users_db_path
         UserManagement.__init__(self, ex)
 
     def do_login(self, user, password):
@@ -28,6 +29,8 @@ class BasicUserManagement(UserManagement):
         """
         conn_users = sqlite3.connect(self.user_db)
         curs_users = conn_users.cursor()
+        if Configuration.md5_password_backend and not Configuration.md5_password_frontend:
+            password = hashlib.md5(password.encode()).hexdigest()
         curs_users.execute("SELECT USER_ID FROM USERS WHERE USER_ID = ? AND PASSWORD = ?", (user, password))
         results = curs_users.fetchone()
         if results is not None:

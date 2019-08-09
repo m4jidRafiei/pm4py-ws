@@ -981,7 +981,7 @@ def upload_log():
                 stru = base64.b64decode(base64_content).decode('utf-8')
 
                 if extension.lower() == "xes" or extension.lower() == "csv" or extension.lower() == "parquet":
-                    filepath = os.path.join("logs", basename + "." + extension)
+                    filepath = os.path.join(Configuration.event_logs_path, basename + "." + extension)
                     F = open(filepath, "w")
                     F.write(stru)
                     F.close()
