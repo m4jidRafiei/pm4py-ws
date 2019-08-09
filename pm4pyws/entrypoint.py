@@ -8,7 +8,7 @@ from threading import Semaphore
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from pm4pyws import configuration as Configuration
+from pm4pywsconfiguration import configuration as Configuration
 from pm4pyws.log_manager import factory as session_manager_factory
 from pm4pyws.user_iam import factory as user_iam_factory
 from pm4pyws.requests_logging import factory as logging_factory
