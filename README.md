@@ -8,8 +8,7 @@ HOW TO INSTALL FROM PIP:
 pip install -U pm4pyws
 
 Then, the script "main.py" could be launched with pre-defined log
-In this case, the databases "event_logs.db" and "users.db" should be there with the pre-defined logs,
-contained in the "logs" folder.
+In this case, the entire content of the "files" folder of this repository shall be there.
 
 
 HOW TO BUILD ON SOURCES:
