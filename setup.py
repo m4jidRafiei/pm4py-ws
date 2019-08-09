@@ -51,12 +51,7 @@ setup(
         'pm4py',
         'Flask',
         'flask-cors',
-        'requests',
-        'python-keycloak',
-        'pyinstaller',
-        'PyQT5',
         'setuptools',
-        'pm4pybpmn',
         'pp-role-mining'
     ],
     project_urls={

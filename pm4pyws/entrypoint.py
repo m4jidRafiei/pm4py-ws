@@ -8,15 +8,15 @@ from threading import Semaphore
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 
-from pm4pyws.configuration import Configuration
+from pm4pyws import configuration as Configuration
 from pm4pyws.log_manager import factory as session_manager_factory
 from pm4pyws.user_iam import factory as user_iam_factory
 from pm4pyws.requests_logging import factory as logging_factory
 from pm4pyws.util import constants
 
-from pm4pyws.privacy.roles import apply_privacy_aware
-
 import logging
+
+from pm4pyws.privacy.roles import apply_privacy_aware
 
 ex = logging_factory.apply()
 um = user_iam_factory.apply(ex)
@@ -103,7 +103,7 @@ def get_user_from_session(session_id):
 
 
 class PM4PyServices:
-    app = Flask(__name__, static_url_path='', static_folder='../webapp2/dist')
+    app = Flask(__name__, static_url_path='', static_folder=Configuration.static_folder)
     app.add_url_rule(app.static_url_path + '/<path:filename>', endpoint='static',
                      view_func=app.send_static_file)
     CORS(app)
@@ -844,31 +844,6 @@ def get_attributes_list():
     return jsonify({"attributes_list": []})
 
 
-@PM4PyServices.app.route("/getTraceAttributes", methods=["GET"])
-def get_trace_attributes_list():
-    clean_expired_sessions()
-
-    # reads the session
-    session = request.args.get('session', type=str)
-    # reads the requested process name
-    process = request.args.get('process', default='receipt', type=str)
-
-    logging.info("get_attributes_list start session=" + str(session) + " process=" + str(process))
-
-    if check_session_validity(session):
-        user = get_user_from_session(session)
-        if lh.check_user_log_visibility(user, process):
-            attributes_list = sorted(
-                list(lh.get_handler_for_process_and_session(process, session).get_trace_attributes()))
-            logging.info(
-                "get_attributes_list complete session=" + str(session) + " process=" + str(process) + " user=" + str(
-                    user))
-
-            return jsonify({"attributes_list": attributes_list})
-
-    return jsonify({"attributes_list": []})
-
-
 @PM4PyServices.app.route("/getAttributeValues", methods=["GET"])
 def get_attribute_values():
     clean_expired_sessions()
@@ -1008,7 +983,7 @@ def upload_log():
                 stru = base64.b64decode(base64_content).decode('utf-8')
 
                 if extension.lower() == "xes" or extension.lower() == "csv" or extension.lower() == "parquet":
-                    filepath = os.path.join("logs", basename + "." + extension)
+                    filepath = os.path.join(Configuration.event_logs_path, basename + "." + extension)
                     F = open(filepath, "w")
                     F.write(stru)
                     F.close()
@@ -1168,8 +1143,9 @@ def get_user_log_visibilities():
 
             logging.info("get_user_log_visibilities complete session=" + str(session) + " this_user=" + str(this_user))
 
-    return jsonify({"sorted_users": sorted_users, "sorted_logs": sorted_logs, "user_log_visibility": user_log_vis})
+            return jsonify({"success": True, "sorted_users": sorted_users, "sorted_logs": sorted_logs, "user_log_visibility": user_log_vis})
 
+    return jsonify({"success": False})
 
 @PM4PyServices.app.route("/addUserLogVisibility", methods=["GET"])
 def add_user_log_visibility():
@@ -1193,7 +1169,9 @@ def add_user_log_visibility():
             logging.info("add_user_log_visibility complete session=" + str(session) + " this_user=" + str(
                 this_user) + " user=" + str(user) + " process=" + str(process))
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/removeUserLogVisibility", methods=["GET"])
@@ -1218,7 +1196,9 @@ def remove_user_log_visibility():
             logging.info("remove_user_log_visibility complete session=" + str(session) + " this_user=" + str(
                 this_user) + " user=" + str(user) + " process=" + str(process))
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/addUserLogDownloadable", methods=["GET"])
@@ -1243,7 +1223,9 @@ def add_user_log_downloadable():
             logging.info("add_user_log_downloadable complete session=" + str(session) + " this_user=" + str(
                 this_user) + " user=" + str(user) + " process=" + str(process))
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/removeUserLogDownloadable", methods=["GET"])
@@ -1268,7 +1250,9 @@ def remove_user_log_downloadable():
             logging.info("remove_user_log_downloadable complete session=" + str(session) + " this_user=" + str(
                 this_user) + " user=" + str(user) + " process=" + str(process))
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/addUserLogRemovable", methods=["GET"])
@@ -1293,7 +1277,9 @@ def add_user_log_removable():
             logging.info("add_user_log_removable complete session=" + str(session) + " this_user=" + str(
                 this_user) + " user=" + str(user) + " process=" + str(process))
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/removeUserLogRemovable", methods=["GET"])
@@ -1318,7 +1304,9 @@ def remove_user_log_removable():
             logging.info("remove_user_log_removable complete session=" + str(session) + " this_user=" + str(
                 this_user) + " user=" + str(user) + " process=" + str(process))
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/deleteEventLog", methods=["GET"])
@@ -1336,7 +1324,9 @@ def deleteEventLog():
         if lh.can_delete(user, process):
             lh.delete_log(process)
 
-    return jsonify({})
+            return jsonify({"success": True})
+
+    return jsonify({"success": False})
 
 
 @PM4PyServices.app.route("/checkVersions", methods=["GET"])
@@ -1347,15 +1337,18 @@ def check_versions():
 
     import pm4pyws
     import pm4py
-    import pm4pybpmn
 
-    logging.info("check_versions complete")
+    try:
+        import pm4pybpmn
 
-    return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__),
-            "pm4pybpmn": str(pm4pybpmn.__version__)}
+        logging.info("check_versions complete")
 
+        return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__),
+                "pm4pybpmn": str(pm4pybpmn.__version__)}
 
-# PRIVACY SERVICES!
+    except:
+        return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__)}
+
 
 def convert_str_to_bool(stri):
     if stri.lower() == "true":

@@ -1,33 +1,30 @@
-FROM nikolaik/python-nodejs
+FROM tiangolo/uwsgi-nginx-flask
 
 RUN apt-get update
 RUN apt-get -y upgrade
-RUN apt-get -y install nano vim
-RUN apt-get -y install git
-RUN apt-get -y install python3-pydot python-pydot python-pydot-ng graphviz
-RUN apt-get -y install python3-tk
-RUN apt-get -y install zip unzip
+RUN apt-get -y install nano vim git python3-pydot python-pydot python-pydot-ng graphviz python3-tk zip unzip curl ftp fail2ban
+RUN curl -sL https://deb.nodesource.com/setup_10.x | bash
+RUN apt-get install nodejs
 
-RUN pip install --no-cache-dir -U pm4py Flask flask-cors requests python-keycloak
-RUN pip install --no-cache-dir -U pyinstaller PyQT5 setuptools
-RUN pip install --no-cache-dir -U pm4pybpmn
+COPY ./docker-sec-confs/sysctl.conf /etc/sysctl.conf
+COPY ./docker-sec-confs/limits.conf /etc/security/limits.conf
+COPY ./docker-sec-confs/nginx.conf /etc/nginx/nginx.conf
+COPY ./docker-sec-confs/jail.local /etc/fail2ban/jail.local
+
+RUN pip install --no-cache-dir -U pm4py Flask flask-cors setuptools
+RUN pip install --no-cache-dir -U pm4pycvxopt
+#RUN pip install --no-cache-dir -U pm4pybpmn
 RUN pip install --no-cache-dir -U pp-role-mining
-COPY . /
-#RUN git submodule init
-#RUN git submodule update
-#RUN cd /webapp2 && git checkout master && git pull
-RUN mkdir -p /webapp2
-RUN rm -rRf /webapp2
-RUN git clone https://github.com/Javert899/source.git
-RUN mv /source /webapp2
-RUN cd /webapp2 && git checkout privacyIntegration
-RUN cd /webapp2 && npm install
-RUN cd /webapp2 && npm install --save-dev --unsafe-perm node-sass
-RUN cd /webapp2 && npm install -g @angular/cli
-RUN cd /webapp2 && npm install -g @angular/material
-RUN cd /webapp2 && ng build --prod
-RUN python setup.py install
 
-ENTRYPOINT ["python", "main.py"]
+COPY . /app
+RUN echo "enable_session = True" >> /app/pm4pyws/configuration.py
+RUN echo "static_folder = '/app/webapp2/dist'" >> /app/pm4pyws/configuration.py
 
-EXPOSE 5000
+RUN mkdir -p /app/webapp2
+RUN rm -rRf /app/webapp2
+RUN cd /app && git clone https://github.com/Javert899/source.git
+RUN mv /app/source /app/webapp2
+RUN cd /app/webapp2 && git checkout privacyIntegration
+RUN cd /app/webapp2 && npm install && npm install --save-dev --unsafe-perm node-sass && npm install -g @angular/core @angular/cli @angular/material
+
+RUN cd /app && python setup.py install
