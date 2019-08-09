@@ -7,6 +7,9 @@ from pm4pyws.handlers.xes.xes import XesHandler
 from pp_role_mining.privacyPreserving import privacyPreserving
 from copy import deepcopy
 
+from pm4pyws import configuration as Configuration
+
+
 def generate_random_string(N):
     """
     Generates a random string
@@ -56,7 +59,7 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     log = log_handler.log
 
     new_log_name = process + "_roles_privacy_" + generate_random_string(4)
-    new_log_path = os.path.join("logs", new_log_name + ".xes")
+    new_log_path = os.path.join(Configuration.event_logs_path, new_log_name + ".xes")
 
     # xes_exporter.export_log(log, new_log_path)
 
