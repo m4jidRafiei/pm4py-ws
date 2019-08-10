@@ -40,16 +40,16 @@ def process_quantities_test(path):
 
 class ParquetTests(unittest.TestCase):
     def test_parquets_basic(self):
-        basic_test("logs//running-example.parquet")
-        basic_test("logs//receipt.parquet")
+        basic_test("files/event_logs/running-example.parquet")
+        basic_test("files/event_logs/receipt.parquet")
 
     def test_parquets_process_quantities(self):
-        process_quantities_test("logs//running-example.parquet")
-        process_quantities_test("logs//receipt.parquet")
+        process_quantities_test("files/event_logs/running-example.parquet")
+        process_quantities_test("files/event_logs/receipt.parquet")
 
     def test_ru_filtering(self):
         handler = ParquetHandler()
-        handler.build_from_path("logs//running-example.parquet")
+        handler.build_from_path("files/event_logs/running-example.parquet")
         handler = handler.add_filter(['timestamp_trace_intersecting', '1293703320@@@1294667760'],
                                      ['timestamp_trace_intersecting', '1293703320@@@1294667760'])
         handler.get_start_activities()

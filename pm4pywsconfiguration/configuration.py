@@ -14,3 +14,4 @@ sql3_databases_path = files_path + '/databases'
 event_logs_path = files_path + '/event_logs'
 event_log_db_path = sql3_databases_path + '/event_logs.db'
 users_db_path = sql3_databases_path + '/users.db'
+parquet_performance_setting1 = True

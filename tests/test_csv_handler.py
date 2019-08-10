@@ -40,14 +40,14 @@ def process_quantities_test(path):
 
 class CsvTests(unittest.TestCase):
     def test_parquets_basic(self):
-        basic_test("logs//running-example.csv")
+        basic_test("files/event_logs/running-example.csv")
 
     def test_parquets_process_quantities(self):
-        process_quantities_test("logs//running-example.csv")
+        process_quantities_test("files/event_logs/running-example.csv")
 
     def test_ru_filtering(self):
         handler = ParquetHandler()
-        handler.build_from_csv("logs//running-example.csv")
+        handler.build_from_csv("files/event_logs/running-example.csv")
         handler = handler.add_filter(['timestamp_trace_intersecting', '1293703320@@@1294667760'],
                                      ['timestamp_trace_intersecting', '1293703320@@@1294667760'])
         handler.get_start_activities()

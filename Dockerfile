@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir -U pm4pycvxopt
 RUN pip install --no-cache-dir -U pp-role-mining
 
 COPY . /app
+#RUN cd /app/files && python download_big_logs.py
 RUN echo "enable_session = True" >> /app/pm4pywsconfiguration/configuration.py
 RUN echo "static_folder = '/app/webapp2/dist'" >> /app/pm4pywsconfiguration/configuration.py
 

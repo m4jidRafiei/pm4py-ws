@@ -28,6 +28,8 @@ from pm4py.objects.log.util.xes import DEFAULT_NAME_KEY, DEFAULT_TIMESTAMP_KEY
 from pm4pyws.util import format_recognition
 from pm4pyws.util.columns_recognition import assign_column_correspondence
 
+from pm4pywsconfiguration import configuration as Configuration
+
 import pandas as pd
 
 
@@ -350,7 +352,9 @@ class ParquetHandler(object):
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
         parameters[ws_constants.PARAM_MOST_COMMON_VARIANT] = self.most_common_variant
         parameters[ws_constants.PARAM_MOST_COMMON_PATHS] = self.most_common_paths
-        # parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
+
+        if Configuration.parquet_performance_setting1:
+            parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
         parameters["variants_df"] = self.variants_df
         return process_schema_factory.apply(self.reduced_dataframe, variant=variant, parameters=parameters)
