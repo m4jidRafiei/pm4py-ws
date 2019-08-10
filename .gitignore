@@ -121,3 +121,6 @@ dmypy.json
 backup
 backup/
 backup/*
+
+*.crt
+*.key
