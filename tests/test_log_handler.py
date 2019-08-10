@@ -40,16 +40,16 @@ def process_quantities_test(path):
 
 class XesTests(unittest.TestCase):
     def test_xes_basic(self):
-        basic_test("logs//running-example.xes")
-        basic_test("logs//receipt.xes")
+        basic_test("files/event_logs/running-example.xes")
+        basic_test("files/event_logs/receipt.xes")
 
     def test_xes_process_quantities(self):
-        process_quantities_test("logs//running-example.xes")
-        process_quantities_test("logs//receipt.xes")
+        process_quantities_test("files/event_logs/running-example.xes")
+        process_quantities_test("files/event_logs/receipt.xes")
 
     def test_ru_filtering(self):
         handler = XesHandler()
-        handler.build_from_path("logs//running-example.xes")
+        handler.build_from_path("files/event_logs/running-example.xes")
         handler = handler.add_filter(['timestamp_trace_intersecting', '1293703320@@@1294667760'],
                                      ['timestamp_trace_intersecting', '1293703320@@@1294667760'])
         handler.get_start_activities()
