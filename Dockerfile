@@ -2,13 +2,14 @@ FROM tiangolo/uwsgi-nginx-flask
 
 RUN apt-get update
 RUN apt-get -y upgrade
-RUN apt-get -y install nano vim git python3-pydot python-pydot python-pydot-ng graphviz python3-tk zip unzip curl ftp fail2ban
+RUN apt-get -y install nano vim git python3-pydot python-pydot python-pydot-ng graphviz python3-tk zip unzip curl ftp fail2ban python3-openssl
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash
 RUN apt-get install nodejs
 
 COPY ./docker-sec-confs/sysctl.conf /etc/sysctl.conf
 COPY ./docker-sec-confs/limits.conf /etc/security/limits.conf
 COPY ./docker-sec-confs/nginx.conf /etc/nginx/nginx.conf
+#COPY ./docker-sec-confs/nginx_ssl.conf /etc/nginx/nginx.conf
 COPY ./docker-sec-confs/jail.local /etc/fail2ban/jail.local
 
 RUN pip install --no-cache-dir -U pm4py Flask flask-cors setuptools
@@ -18,6 +19,9 @@ COPY . /app
 RUN cd /app/files && python download_big_logs.py
 RUN echo "enable_session = True" >> /app/pm4pywsconfiguration/configuration.py
 RUN echo "static_folder = '/app/webapp2/dist'" >> /app/pm4pywsconfiguration/configuration.py
+RUN echo "ssl_context_directory = '/app/ssl_cert_gen'" >> /app/pm4pywsconfiguration/configuration.py
+#RUN pip install --no-cache-dir -U pyOpenSSL
+#RUN cd /app/ssl_cert_gen && python create.py
 
 RUN mkdir -p /app/webapp2
 RUN rm -rRf /app/webapp2

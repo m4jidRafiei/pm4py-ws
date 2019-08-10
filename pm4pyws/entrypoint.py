@@ -121,10 +121,12 @@ class PM4PyServices:
         """
         lh.load_log_static(log_name, file_path, parameters=parameters)
 
-    def serve(self, host="0.0.0.0", port="5000", threaded=True):
+    def serve(self, host="0.0.0.0", port="5000", threaded=True, ssl_context=None):
         clean_expired_sessions()
-        self.app.run(host=host, port=port, threaded=threaded)
-
+        if ssl_context is None:
+            self.app.run(host=host, port=port, threaded=threaded)
+        else:
+            self.app.run(host=host, port=port, threaded=threaded, ssl_context=ssl_context)
 
 @PM4PyServices.app.route("/getProcessSchema", methods=["GET"])
 def get_process_schema():
