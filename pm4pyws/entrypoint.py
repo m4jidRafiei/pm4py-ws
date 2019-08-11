@@ -14,6 +14,8 @@ from pm4pyws.user_iam import factory as user_iam_factory
 from pm4pyws.requests_logging import factory as logging_factory
 from pm4pyws.util import constants
 
+import socket
+
 import logging
 
 ex = logging_factory.apply()
@@ -1355,7 +1357,7 @@ def check_versions():
         logging.info("check_versions complete")
 
         return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__),
-                "pm4pybpmn": str(pm4pybpmn.__version__)}
+                "pm4pybpmn": str(pm4pybpmn.__version__), "hostname": str(socket.gethostname())}
 
     except:
-        return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__)}
+        return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__), "hostname": str(socket.gethostname())}
