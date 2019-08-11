@@ -4,17 +4,18 @@ from pm4pywsconfiguration import configuration as Configuration
 from pm4pyws.handlers.parquet.parquet import ParquetHandler
 from pm4pyws.handlers.xes.xes import XesHandler
 from pm4pyws.log_manager.interface.log_manager import LogHandler
+from pm4py.objects.log.exporter.xes import factory as xes_exporter
+from pm4py.objects.log.exporter.parquet import factory as parquet_exporter
 
 import time
+import os
 
-
-class BasicLogSessionHandler(LogHandler):
+class MultiNodeSessionHandler(LogHandler):
     def __init__(self, ex):
         # path to the database
         self.database_path = Configuration.event_log_db_path
 
-        self.handlers = {}
-        self.session_handlers = {}
+        self.logs_correspondence = {}
 
         self.objects_memory = {}
         self.objects_timestamp = {}
@@ -26,7 +27,84 @@ class BasicLogSessionHandler(LogHandler):
         curs_logs.execute("DELETE FROM EVENT_LOGS WHERE IS_TEMPORARY = 1")
         conn_logs.commit()
 
+        self.load_log_correspondence()
+
         LogHandler.__init__(self, ex)
+
+    def load_log_correspondence(self):
+        """
+        Loads the log reference in the database
+        """
+        conn_logs = sqlite3.connect(self.database_path)
+        curs_logs = conn_logs.cursor()
+
+        curs_logs.execute("SELECT LOG_NAME, LOG_PATH FROM EVENT_LOGS")
+
+        logs_corr = {}
+
+        for res in curs_logs.fetchall():
+            logs_corr[res[0]] = res[1]
+
+        self.logs_correspondence = logs_corr
+
+    def load_temp_log_if_it_is_there(self, log_name, session, parameters=None):
+        """
+        Load a log associated to a session if it exists in the temp logs folder
+
+        Parameters
+        --------------
+        log_name
+            Log name
+        session
+            Session ID
+        parameters
+            Possible parameters of the algorithm
+        """
+        if parameters is None:
+            parameters = {}
+        force_reload = parameters["force_reload"] if "force_reload" in parameters else False
+        if force_reload:
+            return None
+
+        handler = None
+        file_path = self.logs_correspondence[log_name]
+        is_parquet = False
+        extension = "xes"
+        if file_path.endswith(".parquet") or file_path.endswith(".csv"):
+            is_parquet = True
+            extension = "parquet"
+        temp_log_path = os.path.join(Configuration.temp_logs_path, str(log_name)+"_"+str(session)+"."+extension)
+        if os.path.exists(temp_log_path):
+            if is_parquet:
+                handler = ParquetHandler()
+                handler.build_from_path(temp_log_path)
+            else:
+                handler = XesHandler()
+                handler.build_from_path(temp_log_path)
+        return handler
+
+    def load_log_on_request(self, log_name):
+        """
+        Loads an event log on request
+
+        Parameters
+        ------------
+        log_path
+            Log name
+        """
+        handler = None
+        file_path = self.logs_correspondence[log_name]
+
+        if file_path.endswith(".parquet"):
+            handler = ParquetHandler()
+            handler.build_from_path(file_path)
+        elif file_path.endswith(".csv"):
+            handler = ParquetHandler()
+            handler.build_from_csv(file_path)
+        elif file_path.endswith(".xes") or file_path.endswith(".xes.gz"):
+            handler = XesHandler()
+            handler.build_from_path(file_path)
+        return handler
 
     def set_user_management(self, um):
         """
@@ -48,11 +126,13 @@ class BasicLogSessionHandler(LogHandler):
         all_sessions
             All valid sessions
         """
-        shk = list(self.session_handlers.keys())
-        for session in shk:
-            if session not in all_sessions and (not str(session) == "null" and not str(session) == "None"):
-                print("removing handler for " + str(session))
-                del self.session_handlers[session]
+        # shk = list(self.session_handlers.keys())
+        # for session in shk:
+        #    if session not in all_sessions and (not str(session) == "null" and not str(session) == "None"):
+        #        print("removing handler for " + str(session))
+        #        del self.session_handlers[session]
+
+        pass
 
     def get_handlers(self):
         """
@@ -63,7 +143,7 @@ class BasicLogSessionHandler(LogHandler):
         handlers
             Handlers
         """
-        return self.handlers
+        return self.logs_correspondence
 
     def get_handler_for_process_and_session(self, process, session, parameters=None):
         """
@@ -83,13 +163,13 @@ class BasicLogSessionHandler(LogHandler):
         handler
             Handler
         """
-        if process in self.handlers:
-            if session not in self.session_handlers:
-                self.session_handlers[session] = {}
-            if process not in self.session_handlers[session]:
-                self.session_handlers[session][process] = self.handlers[process]
-            # print(LogsHandlers.session_handlers[session][process].filters_chain)
-            return self.session_handlers[session][process]
+        self.load_log_correspondence()
+        if process in self.logs_correspondence:
+            handler = self.load_temp_log_if_it_is_there(process, session, parameters=parameters)
+            if handler is not None:
+                return handler
+            handler = self.load_log_on_request(process)
+            return handler
         return None
 
     def set_handler_for_process_and_session(self, process, session, handler):
@@ -105,10 +185,16 @@ class BasicLogSessionHandler(LogHandler):
         handler
             Handler
         """
-        if process in self.handlers:
-            if session not in self.session_handlers:
-                self.session_handlers[session] = {}
-            self.session_handlers[session][process] = handler
+        self.load_log_correspondence()
+        if process in self.logs_correspondence:
+            if type(handler) is ParquetHandler:
+                df = handler.dataframe
+                target_path = os.path.join(Configuration.temp_logs_path, str(process)+"_"+str(session)+".parquet")
+                parquet_exporter.export_df(df, target_path)
+            elif type(handler) is XesHandler:
+                log = handler.log
+                target_path = os.path.join(Configuration.temp_logs_path, str(process)+"_"+str(session)+".xes")
+                xes_exporter.export_log(log, target_path)
 
     def check_is_admin(self, user):
         """
@@ -147,16 +233,6 @@ class BasicLogSessionHandler(LogHandler):
         filepath
             Log path
         """
-
-        if filepath.endswith(".parquet"):
-            self.handlers[basename] = ParquetHandler()
-            self.handlers[basename].build_from_path(filepath)
-        elif filepath.endswith(".csv"):
-            self.handlers[basename] = ParquetHandler()
-            self.handlers[basename].build_from_csv(filepath)
-        else:
-            self.handlers[basename] = XesHandler()
-            self.handlers[basename].build_from_path(filepath)
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
         if is_temporary:
@@ -243,28 +319,7 @@ class BasicLogSessionHandler(LogHandler):
         return True
 
     def load_log_static(self, log_name, file_path, parameters=None):
-        """
-        Loads an event log inside the known handlers
-
-        Parameters
-        ------------
-        log_name
-            Log name
-        file_path
-            Full path (in the services machine) to the log
-        parameters
-            Possible parameters
-        """
-        if log_name not in self.handlers:
-            if file_path.endswith(".parquet"):
-                self.handlers[log_name] = ParquetHandler()
-                self.handlers[log_name].build_from_path(file_path, parameters=parameters)
-            elif file_path.endswith(".csv"):
-                self.handlers[log_name] = ParquetHandler()
-                self.handlers[log_name].build_from_csv(file_path, parameters=parameters)
-            elif file_path.endswith(".xes") or file_path.endswith(".xes.gz"):
-                self.handlers[log_name] = XesHandler()
-                self.handlers[log_name].build_from_path(file_path, parameters=parameters)
+        pass
 
     def save_object_memory(self, key, value):
         """
@@ -371,7 +426,7 @@ class BasicLogSessionHandler(LogHandler):
         return sorted_users, sorted_logs, user_log_vis
 
     def add_user_eventlog_visibility(self, user, event_log):
-        print("start add_user_eventlog_visibility "+str(user)+" "+str(event_log))
+        print("start add_user_eventlog_visibility " + str(user) + " " + str(event_log))
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
@@ -381,11 +436,10 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs.commit()
         conn_logs.close()
 
-        print("end add_user_eventlog_visibility "+str(user)+" "+str(event_log))
-
+        print("end add_user_eventlog_visibility " + str(user) + " " + str(event_log))
 
     def remove_user_eventlog_visibility(self, user, event_log):
-        print("start remove_user_eventlog_visibility "+str(user)+" "+str(event_log))
+        print("start remove_user_eventlog_visibility " + str(user) + " " + str(event_log))
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
@@ -393,10 +447,10 @@ class BasicLogSessionHandler(LogHandler):
 
         conn_logs.commit()
         conn_logs.close()
-        print("end remove_user_eventlog_visibility "+str(user)+" "+str(event_log))
+        print("end remove_user_eventlog_visibility " + str(user) + " " + str(event_log))
 
     def add_user_eventlog_downloadable(self, user, event_log):
-        print("start add_user_eventlog_downloadable "+str(user)+" "+str(event_log))
+        print("start add_user_eventlog_downloadable " + str(user) + " " + str(event_log))
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
@@ -406,10 +460,10 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs.commit()
         conn_logs.close()
 
-        print("end add_user_eventlog_downloadable "+str(user)+" "+str(event_log))
+        print("end add_user_eventlog_downloadable " + str(user) + " " + str(event_log))
 
     def remove_user_eventlog_downloadable(self, user, event_log):
-        print("start remove_user_eventlog_downloadable "+str(user)+" "+str(event_log))
+        print("start remove_user_eventlog_downloadable " + str(user) + " " + str(event_log))
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
@@ -418,10 +472,10 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs.commit()
         conn_logs.close()
 
-        print("end remove_user_eventlog_downloadable "+str(user)+" "+str(event_log))
+        print("end remove_user_eventlog_downloadable " + str(user) + " " + str(event_log))
 
     def add_user_eventlog_removable(self, user, event_log):
-        print("start add_user_eventlog_removable "+str(user)+" "+str(event_log))
+        print("start add_user_eventlog_removable " + str(user) + " " + str(event_log))
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
@@ -431,10 +485,10 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs.commit()
         conn_logs.close()
 
-        print("end add_user_eventlog_removable "+str(user)+" "+str(event_log))
+        print("end add_user_eventlog_removable " + str(user) + " " + str(event_log))
 
     def remove_user_eventlog_removable(self, user, event_log):
-        print("start remove_user_eventlog_removable "+str(user)+" "+str(event_log))
+        print("start remove_user_eventlog_removable " + str(user) + " " + str(event_log))
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
@@ -443,14 +497,15 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs.commit()
         conn_logs.close()
 
-        print("end remove_user_eventlog_removable "+str(user)+" "+str(event_log))
+        print("end remove_user_eventlog_removable " + str(user) + " " + str(event_log))
 
     def check_log_is_removable(self, log):
         res = False
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
-        curs_logs.execute("SELECT * FROM EVENT_LOGS WHERE LOG_NAME = ? AND LOG_NAME = ? AND CAN_REMOVED = 1",(log, log))
+        curs_logs.execute("SELECT * FROM EVENT_LOGS WHERE LOG_NAME = ? AND LOG_NAME = ? AND CAN_REMOVED = 1",
+                          (log, log))
 
         cur = curs_logs.fetchall()
 
@@ -496,16 +551,15 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
-        curs_logs.execute("DELETE FROM EVENT_LOGS WHERE LOG_NAME = ? AND LOG_NAME = ?", (log,log))
-        curs_logs.execute("DELETE FROM USER_LOG_VISIBILITY WHERE LOG_NAME = ? AND LOG_NAME = ?", (log,log))
-        curs_logs.execute("DELETE FROM USER_LOG_REMOVAL WHERE LOG_NAME = ? AND LOG_NAME = ?", (log,log))
-        curs_logs.execute("DELETE FROM USER_LOG_DOWNLOADABLE WHERE LOG_NAME = ? AND LOG_NAME = ?", (log,log))
+        curs_logs.execute("DELETE FROM EVENT_LOGS WHERE LOG_NAME = ? AND LOG_NAME = ?", (log, log))
+        curs_logs.execute("DELETE FROM USER_LOG_VISIBILITY WHERE LOG_NAME = ? AND LOG_NAME = ?", (log, log))
+        curs_logs.execute("DELETE FROM USER_LOG_REMOVAL WHERE LOG_NAME = ? AND LOG_NAME = ?", (log, log))
+        curs_logs.execute("DELETE FROM USER_LOG_DOWNLOADABLE WHERE LOG_NAME = ? AND LOG_NAME = ?", (log, log))
 
         conn_logs.commit()
         conn_logs.close()
 
-        del self.handlers[log]
+        del self.logs_correspondence[log]
         for session in self.session_handlers:
             if log in self.session_handlers[session]:
                 del self.session_handlers[session][log]
-

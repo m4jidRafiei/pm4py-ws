@@ -20,6 +20,7 @@ COPY . /app
 RUN echo "enable_session = True" >> /app/pm4pywsconfiguration/configuration.py
 RUN echo "static_folder = '/app/webapp2/dist'" >> /app/pm4pywsconfiguration/configuration.py
 RUN echo "ssl_context_directory = '/app/ssl_cert_gen'" >> /app/pm4pywsconfiguration/configuration.py
+#RUN echo "log_manager_default_variant = 'multinode_file_based'" >> /app/pm4pywsconfiguration/configuration.py
 #RUN pip install --no-cache-dir -U pyOpenSSL
 #RUN cd /app/ssl_cert_gen && python create.py
 

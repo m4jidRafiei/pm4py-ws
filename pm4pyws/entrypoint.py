@@ -18,7 +18,7 @@ import logging
 
 ex = logging_factory.apply()
 um = user_iam_factory.apply(ex)
-lh = session_manager_factory.apply(ex)
+lh = session_manager_factory.apply(ex, variant=Configuration.log_manager_default_variant)
 lh.set_user_management(um)
 
 
@@ -127,6 +127,7 @@ class PM4PyServices:
             self.app.run(host=host, port=port, threaded=threaded)
         else:
             self.app.run(host=host, port=port, threaded=threaded, ssl_context=ssl_context)
+
 
 @PM4PyServices.app.route("/getProcessSchema", methods=["GET"])
 def get_process_schema():
@@ -1075,7 +1076,11 @@ def add_filter():
             # reads all the filters
             all_filters = request.json['all_filters']
 
-            new_handler = lh.get_handler_for_process_and_session(process, session).add_filter(filter, all_filters)
+            parameters = {}
+            parameters["force_reload"] = True
+
+            new_handler = lh.get_handler_for_process_and_session(process, session, parameters=parameters).add_filter(
+                filter, all_filters)
             lh.set_handler_for_process_and_session(process, session, new_handler)
 
             logging.info("add_filter start session=" + str(session) + " process=" + str(process) + " user=" + str(user))
@@ -1112,7 +1117,11 @@ def remove_filter():
             # reads all the filters
             all_filters = request.json['all_filters']
 
-            new_handler = lh.get_handler_for_process_and_session(process, session).remove_filter(filter, all_filters)
+            parameters = {}
+            parameters["force_reload"] = True
+
+            new_handler = lh.get_handler_for_process_and_session(process, session, parameters=parameters).remove_filter(
+                filter, all_filters)
             lh.set_handler_for_process_and_session(process, session, new_handler)
 
             logging.info(
@@ -1143,9 +1152,11 @@ def get_user_log_visibilities():
 
             logging.info("get_user_log_visibilities complete session=" + str(session) + " this_user=" + str(this_user))
 
-            return jsonify({"success": True, "sorted_users": sorted_users, "sorted_logs": sorted_logs, "user_log_visibility": user_log_vis})
+            return jsonify({"success": True, "sorted_users": sorted_users, "sorted_logs": sorted_logs,
+                            "user_log_visibility": user_log_vis})
 
     return jsonify({"success": False})
+
 
 @PM4PyServices.app.route("/addUserLogVisibility", methods=["GET"])
 def add_user_log_visibility():
