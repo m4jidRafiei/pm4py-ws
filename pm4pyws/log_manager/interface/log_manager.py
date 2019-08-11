@@ -36,7 +36,7 @@ class LogHandler(object):
         """
         raise Exception("log_manager remove_unneeded_sessions not implemented!")
 
-    def get_handler_for_process_and_session(self, process, session):
+    def get_handler_for_process_and_session(self, process, session, parameters=None):
         """
         Gets an handler for a given process and session
 
@@ -46,6 +46,8 @@ class LogHandler(object):
             Process
         session
             Session
+        parameters
+            Possible parameters of the algorithm
 
         Returns
         -------------
