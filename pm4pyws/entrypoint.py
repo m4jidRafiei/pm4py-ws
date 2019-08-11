@@ -14,13 +14,15 @@ from pm4pyws.user_iam import factory as user_iam_factory
 from pm4pyws.requests_logging import factory as logging_factory
 from pm4pyws.util import constants
 
+import socket
+
 import logging
 
 from pm4pyws.privacy.roles import apply_privacy_aware
 
 ex = logging_factory.apply()
 um = user_iam_factory.apply(ex)
-lh = session_manager_factory.apply(ex)
+lh = session_manager_factory.apply(ex, variant=Configuration.log_manager_default_variant)
 lh.set_user_management(um)
 
 
@@ -123,9 +125,12 @@ class PM4PyServices:
         """
         lh.load_log_static(log_name, file_path, parameters=parameters)
 
-    def serve(self, host="0.0.0.0", port="5000", threaded=True):
+    def serve(self, host="0.0.0.0", port="5000", threaded=True, ssl_context=None):
         clean_expired_sessions()
-        self.app.run(host=host, port=port, threaded=threaded)
+        if ssl_context is None:
+            self.app.run(host=host, port=port, threaded=threaded)
+        else:
+            self.app.run(host=host, port=port, threaded=threaded, ssl_context=ssl_context)
 
 
 @PM4PyServices.app.route("/getProcessSchema", methods=["GET"])
@@ -1075,7 +1080,11 @@ def add_filter():
             # reads all the filters
             all_filters = request.json['all_filters']
 
-            new_handler = lh.get_handler_for_process_and_session(process, session).add_filter(filter, all_filters)
+            parameters = {}
+            parameters["force_reload"] = True
+
+            new_handler = lh.get_handler_for_process_and_session(process, session, parameters=parameters).add_filter(
+                filter, all_filters)
             lh.set_handler_for_process_and_session(process, session, new_handler)
 
             logging.info("add_filter start session=" + str(session) + " process=" + str(process) + " user=" + str(user))
@@ -1112,7 +1121,11 @@ def remove_filter():
             # reads all the filters
             all_filters = request.json['all_filters']
 
-            new_handler = lh.get_handler_for_process_and_session(process, session).remove_filter(filter, all_filters)
+            parameters = {}
+            parameters["force_reload"] = True
+
+            new_handler = lh.get_handler_for_process_and_session(process, session, parameters=parameters).remove_filter(
+                filter, all_filters)
             lh.set_handler_for_process_and_session(process, session, new_handler)
 
             logging.info(
@@ -1346,10 +1359,11 @@ def check_versions():
         logging.info("check_versions complete")
 
         return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__),
-                "pm4pybpmn": str(pm4pybpmn.__version__)}
+                "pm4pybpmn": str(pm4pybpmn.__version__), "hostname": str(socket.gethostname())}
 
     except:
-        return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__)}
+        return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__),
+                "hostname": str(socket.gethostname())}
 
 
 def convert_str_to_bool(stri):

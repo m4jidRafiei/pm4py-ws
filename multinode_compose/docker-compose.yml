@@ -1,0 +1,9 @@
+version: "3"
+
+services:
+  pm4pyws:
+    image: javert899/pm4pyws:multiNode
+    ports:
+        - "80-82:80"
+    volumes:
+        - "/opt/files:/app/files"
