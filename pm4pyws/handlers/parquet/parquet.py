@@ -31,6 +31,7 @@ from pm4pyws.util.columns_recognition import assign_column_correspondence
 from pm4pywsconfiguration import configuration as Configuration
 
 import pandas as pd
+import time
 
 
 class ParquetHandler(object):
@@ -207,19 +208,21 @@ class ParquetHandler(object):
         new_handler
             New handler
         """
-        new_handler = ParquetHandler()
-        new_handler.copy_from_ancestor(self.first_ancestor)
-        for filter in all_filters:
-            new_handler.add_filter0(filter)
-        new_handler.reduced_dataframe = new_handler.dataframe[
-            [CASE_CONCEPT_NAME, self.activity_key, DEFAULT_TIMESTAMP_KEY]]
-        new_handler.build_variants_df()
-        new_handler.grouped_dataframe = new_handler.dataframe.groupby(CASE_CONCEPT_NAME)
-        new_handler.reduced_grouped_dataframe = new_handler.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
-        new_handler.calculate_cases_number()
-        new_handler.calculate_variants_number()
-        new_handler.calculate_events_number()
-        return new_handler
+        if all_filters:
+            new_handler = ParquetHandler()
+            new_handler.copy_from_ancestor(self.first_ancestor)
+            for filter in all_filters:
+                new_handler.add_filter0(filter)
+            new_handler.reduced_dataframe = new_handler.dataframe[
+                [CASE_CONCEPT_NAME, self.activity_key, DEFAULT_TIMESTAMP_KEY]]
+            new_handler.build_variants_df()
+            new_handler.grouped_dataframe = new_handler.dataframe.groupby(CASE_CONCEPT_NAME)
+            new_handler.reduced_grouped_dataframe = new_handler.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
+            new_handler.calculate_cases_number()
+            new_handler.calculate_variants_number()
+            new_handler.calculate_events_number()
+            return new_handler
+        return self.first_ancestor
 
     def add_filter(self, filter, all_filters):
         """
@@ -281,7 +284,7 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
+        #parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
         self.variants_df = case_statistics.get_variants_df_with_case_duration(self.reduced_dataframe,
                                                                               parameters=parameters)
@@ -312,13 +315,15 @@ class ParquetHandler(object):
         """
         Calculate the number of variants in this log
         """
-        self.variants_number = len(self.variants_df.groupby("variant"))
+        #self.variants_number = len(self.variants_df.groupby("variant"))
+        self.variants_number = self.variants_df["variant"].nunique()
 
     def calculate_cases_number(self):
         """
         Calculate the number of cases in this log
         """
-        self.cases_number = len(self.grouped_dataframe)
+        #self.cases_number = len(self.grouped_dataframe)
+        self.cases_number = self.dataframe["case:concept:name"].nunique()
 
     def calculate_events_number(self):
         """
