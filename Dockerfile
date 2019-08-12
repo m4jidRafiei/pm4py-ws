@@ -9,7 +9,7 @@ RUN apt-get install nodejs
 COPY ./docker-sec-confs/sysctl.conf /etc/sysctl.conf
 COPY ./docker-sec-confs/limits.conf /etc/security/limits.conf
 COPY ./docker-sec-confs/nginx.conf /etc/nginx/nginx.conf
-#COPY ./docker-sec-confs/nginx_ssl.conf /etc/nginx/conf.d/nginx_ssl.conf
+COPY ./docker-sec-confs/nginx_ssl.conf /etc/nginx/conf.d/nginx_ssl.conf
 COPY ./docker-sec-confs/jail.local /etc/fail2ban/jail.local
 
 RUN pip install --no-cache-dir -U pm4py Flask flask-cors setuptools
@@ -21,8 +21,8 @@ RUN echo "enable_session = True" >> /app/pm4pywsconfiguration/configuration.py
 RUN echo "static_folder = '/app/webapp2/dist'" >> /app/pm4pywsconfiguration/configuration.py
 RUN echo "ssl_context_directory = '/app/ssl_cert_gen'" >> /app/pm4pywsconfiguration/configuration.py
 #RUN echo "log_manager_default_variant = 'multinode_file_based'" >> /app/pm4pywsconfiguration/configuration.py
-#RUN pip install --no-cache-dir -U pyOpenSSL
-#RUN cd /app/ssl_cert_gen && python create.py
+RUN pip install --no-cache-dir -U pyOpenSSL
+RUN cd /app/ssl_cert_gen && python create.py
 
 RUN mkdir -p /app/webapp2
 RUN rm -rRf /app/webapp2
