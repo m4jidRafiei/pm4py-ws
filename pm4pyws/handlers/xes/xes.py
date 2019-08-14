@@ -340,7 +340,11 @@ class XesHandler(object):
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
         parameters["variants"] = self.variants
         parameters["var_durations"] = self.variants_times
-        return variants.get_statistics(self.log, parameters=parameters)
+        variants_stats = variants.get_statistics(self.log, parameters=parameters)
+        variants_stats = variants_stats[0:min(len(variants_stats), ws_constants.MAX_NO_VARIANTS_TO_RETURN)]
+
+        return variants_stats
+
 
     def get_sna(self, variant="handover", parameters=None):
         """
@@ -404,7 +408,7 @@ class XesHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters["max_ret_cases"] = 500
+        parameters["max_ret_cases"] = ws_constants.MAX_NO_CASES_TO_RETURN
         parameters["sort_by_index"] = parameters["sort_by_index"] if "sort_by_index" in parameters else 0
         parameters["sort_ascending"] = parameters["sort_ascending"] if "sort_ascending" in parameters else False
         parameters["variants"] = self.variants

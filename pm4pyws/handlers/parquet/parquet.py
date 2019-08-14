@@ -446,10 +446,11 @@ class ParquetHandler(object):
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
         parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
-
         parameters["variants_df"] = self.variants_df
+        variants_stats = variants.get_statistics(self.reduced_dataframe, parameters=parameters)
+        variants_stats = variants_stats[0:min(len(variants_stats), ws_constants.MAX_NO_VARIANTS_TO_RETURN)]
 
-        return variants.get_statistics(self.reduced_dataframe, parameters=parameters)
+        return variants_stats
 
     def get_sna(self, variant="handover", parameters=None):
         """
@@ -518,7 +519,7 @@ class ParquetHandler(object):
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
         parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
-        parameters["max_ret_cases"] = 500
+        parameters["max_ret_cases"] = ws_constants.MAX_NO_CASES_TO_RETURN
         parameters["sort_by_column"] = parameters[
             "sort_by_column"] if "sort_by_column" in parameters else "caseDuration"
         parameters["sort_ascending"] = parameters["sort_ascending"] if "sort_ascending" in parameters else False
