@@ -171,7 +171,7 @@ def get_process_schema():
                 handler = lh.get_handler_for_process_and_session(process, session)
                 filters_chain = handler.get_filters_chain_repr()
                 ps_repr = process + "@@" + variant + "@@" + str(simplicity) + "@@" + filters_chain
-                saved_obj = lh.get_object_memory(ps_repr)
+                saved_obj = lh.get_object_memory(ps_repr) if Configuration.enable_process_caching else None
                 if saved_obj is not None:
                     base64 = saved_obj[0]
                     model = saved_obj[1]
