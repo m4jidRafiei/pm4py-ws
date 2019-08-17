@@ -284,12 +284,11 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        #parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
+        # parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
         self.variants_df = case_statistics.get_variants_df_with_case_duration(self.reduced_dataframe,
                                                                               parameters=parameters)
         self.save_most_common_variant(self.variants_df)
-
 
     def save_most_common_variant(self, variants_df):
         variants_df["count"] = 1
@@ -308,21 +307,21 @@ class ParquetHandler(object):
                     best_var_idx = i
                     break
             self.most_common_variant = variants_list[best_var_idx]["variant"].split(",")
-            for i in range(len(self.most_common_variant)-1):
-                self.most_common_paths.append((self.most_common_variant[i], self.most_common_variant[i+1]))
+            for i in range(len(self.most_common_variant) - 1):
+                self.most_common_paths.append((self.most_common_variant[i], self.most_common_variant[i + 1]))
 
     def calculate_variants_number(self):
         """
         Calculate the number of variants in this log
         """
-        #self.variants_number = len(self.variants_df.groupby("variant"))
+        # self.variants_number = len(self.variants_df.groupby("variant"))
         self.variants_number = self.variants_df["variant"].nunique()
 
     def calculate_cases_number(self):
         """
         Calculate the number of cases in this log
         """
-        #self.cases_number = len(self.grouped_dataframe)
+        # self.cases_number = len(self.grouped_dataframe)
         self.cases_number = self.dataframe["case:concept:name"].nunique()
 
     def calculate_events_number(self):
@@ -443,12 +442,14 @@ class ParquetHandler(object):
         """
         if parameters is None:
             parameters = {}
+        max_no_variants = parameters[
+            "max_no_variants"] if "max_no_variants" in parameters else ws_constants.MAX_NO_VARIANTS_TO_RETURN
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
         parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
         parameters["variants_df"] = self.variants_df
         variants_stats = variants.get_statistics(self.reduced_dataframe, parameters=parameters)
-        variants_stats = variants_stats[0:min(len(variants_stats), ws_constants.MAX_NO_VARIANTS_TO_RETURN)]
+        variants_stats = variants_stats[0:min(len(variants_stats), max_no_variants)]
 
         return variants_stats
 
@@ -519,7 +520,7 @@ class ParquetHandler(object):
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
         parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
-        parameters["max_ret_cases"] = ws_constants.MAX_NO_CASES_TO_RETURN
+        #parameters["max_ret_cases"] = ws_constants.MAX_NO_CASES_TO_RETURN
         parameters["sort_by_column"] = parameters[
             "sort_by_column"] if "sort_by_column" in parameters else "caseDuration"
         parameters["sort_ascending"] = parameters["sort_ascending"] if "sort_ascending" in parameters else False
