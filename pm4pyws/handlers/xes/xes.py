@@ -336,12 +336,14 @@ class XesHandler(object):
         """
         if parameters is None:
             parameters = {}
+        max_no_variants = parameters[
+            "max_no_variants"] if "max_no_variants" in parameters else ws_constants.MAX_NO_VARIANTS_TO_RETURN
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
         parameters["variants"] = self.variants
         parameters["var_durations"] = self.variants_times
         variants_stats = variants.get_statistics(self.log, parameters=parameters)
-        variants_stats = variants_stats[0:min(len(variants_stats), ws_constants.MAX_NO_VARIANTS_TO_RETURN)]
+        variants_stats = variants_stats[0:min(len(variants_stats), max_no_variants)]
 
         return variants_stats
 
@@ -408,7 +410,7 @@ class XesHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters["max_ret_cases"] = ws_constants.MAX_NO_CASES_TO_RETURN
+        #parameters["max_ret_cases"] = ws_constants.MAX_NO_CASES_TO_RETURN
         parameters["sort_by_index"] = parameters["sort_by_index"] if "sort_by_index" in parameters else 0
         parameters["sort_ascending"] = parameters["sort_ascending"] if "sort_ascending" in parameters else False
         parameters["variants"] = self.variants
