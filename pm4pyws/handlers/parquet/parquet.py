@@ -35,7 +35,7 @@ import time
 
 
 class ParquetHandler(object):
-    def __init__(self):
+    def __init__(self, is_lazy=False):
         """
         Constructor (set all variables to None)
         """
@@ -61,13 +61,16 @@ class ParquetHandler(object):
         # most common variant (paths)
         self.most_common_paths = None
         # number of variants
-        self.variants_number = 0
+        self.variants_number = -1
         # number of cases
-        self.cases_number = 0
+        self.cases_number = -1
         # number of events
-        self.events_number = 0
+        self.events_number = -1
         # classifier
         self.activity_key = None
+
+        self.is_lazy = is_lazy
+        self.sorted_dataframe = False
 
     def get_filters_chain_repr(self):
         """
@@ -97,6 +100,8 @@ class ParquetHandler(object):
         self.grouped_dataframe = ancestor.grouped_dataframe
         self.reduced_dataframe = ancestor.reduced_dataframe
         self.reduced_grouped_dataframe = ancestor.reduced_grouped_dataframe
+        self.is_lazy = ancestor.is_lazy
+        self.sorted_dataframe = ancestor.sorted_dataframe
 
     def build_from_path(self, path, parameters=None):
         """
@@ -115,13 +120,16 @@ class ParquetHandler(object):
         # TODO: verify if this is the best way to act
         self.dataframe[DEFAULT_TIMESTAMP_KEY] = pd.to_datetime(self.dataframe[DEFAULT_TIMESTAMP_KEY], utc=True)
         self.postloading_processing_dataframe()
-        self.reduced_dataframe = self.dataframe[[CASE_CONCEPT_NAME, self.activity_key, DEFAULT_TIMESTAMP_KEY]]
-        self.build_variants_df()
-        self.grouped_dataframe = self.dataframe.groupby(CASE_CONCEPT_NAME)
-        self.reduced_grouped_dataframe = self.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
-        self.calculate_events_number()
-        self.calculate_variants_number()
-        self.calculate_cases_number()
+        self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[CASE_CONCEPT_NAME].astype(str)
+        if not self.is_lazy:
+            self.sort_dataframe_by_case_id()
+            self.build_reduced_dataframe()
+            self.build_variants_df()
+            self.grouped_dataframe = self.dataframe.groupby(CASE_CONCEPT_NAME)
+            self.reduced_grouped_dataframe = self.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
+            self.calculate_events_number()
+            self.calculate_variants_number()
+            self.calculate_cases_number()
 
     def build_from_csv(self, path, parameters=None):
         """
@@ -153,7 +161,13 @@ class ParquetHandler(object):
         else:
             self.dataframe = csv_import_adapter.import_dataframe_from_path(path, sep=sep)
 
-        case_id_glue, activity_key, timestamp_key = assign_column_correspondence(self.dataframe)
+        case_id_glue1, activity_key1, timestamp_key1 = assign_column_correspondence(self.dataframe)
+        if case_id_glue is None:
+            case_id_glue = case_id_glue1
+        if activity_key is None:
+            activity_key = activity_key1
+        if timestamp_key is None:
+            timestamp_key = timestamp_key1
 
         if not activity_key == xes.DEFAULT_NAME_KEY:
             self.dataframe[xes.DEFAULT_NAME_KEY] = self.dataframe[activity_key]
@@ -163,13 +177,15 @@ class ParquetHandler(object):
             self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[case_id_glue]
         self.postloading_processing_dataframe()
         self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[CASE_CONCEPT_NAME].astype(str)
-        self.reduced_dataframe = self.dataframe[[CASE_CONCEPT_NAME, self.activity_key, DEFAULT_TIMESTAMP_KEY]]
-        self.build_variants_df()
-        self.grouped_dataframe = self.dataframe.groupby(CASE_CONCEPT_NAME)
-        self.reduced_grouped_dataframe = self.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
-        self.calculate_variants_number()
-        self.calculate_cases_number()
-        self.calculate_events_number()
+        if not self.is_lazy:
+            self.sort_dataframe_by_case_id()
+            self.build_reduced_dataframe()
+            self.build_variants_df()
+            self.grouped_dataframe = self.dataframe.groupby(CASE_CONCEPT_NAME)
+            self.reduced_grouped_dataframe = self.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
+            self.calculate_variants_number()
+            self.calculate_cases_number()
+            self.calculate_events_number()
 
     def postloading_processing_dataframe(self):
         """
@@ -185,12 +201,15 @@ class ParquetHandler(object):
             self.dataframe["@@classifier"] = self.dataframe[xes.DEFAULT_NAME_KEY]
         self.activity_key = "@@classifier"
 
+    def sort_dataframe_by_case_id(self):
+        """
+        Sort the dataframe by case ID
+        """
         if xes.DEFAULT_TIMESTAMP_KEY in self.dataframe:
             self.dataframe = self.dataframe.sort_values([CASE_CONCEPT_NAME, xes.DEFAULT_TIMESTAMP_KEY])
         else:
             self.dataframe = self.dataframe.sort_values(CASE_CONCEPT_NAME)
-
-        # self.dataframe["@@index"] = self.dataframe.index
+        self.sorted_dataframe = True
 
     def remove_filter(self, filter, all_filters):
         """
@@ -213,14 +232,18 @@ class ParquetHandler(object):
             new_handler.copy_from_ancestor(self.first_ancestor)
             for filter in all_filters:
                 new_handler.add_filter0(filter)
-            new_handler.reduced_dataframe = new_handler.dataframe[
-                [CASE_CONCEPT_NAME, self.activity_key, DEFAULT_TIMESTAMP_KEY]]
-            new_handler.build_variants_df()
-            new_handler.grouped_dataframe = new_handler.dataframe.groupby(CASE_CONCEPT_NAME)
-            new_handler.reduced_grouped_dataframe = new_handler.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
-            new_handler.calculate_cases_number()
-            new_handler.calculate_variants_number()
-            new_handler.calculate_events_number()
+            new_handler.events_number = -1
+            new_handler.cases_number = -1
+            new_handler.variants_number = -1
+
+            if not self.is_lazy:
+                new_handler.build_reduced_dataframe()
+                new_handler.build_variants_df()
+                new_handler.grouped_dataframe = new_handler.dataframe.groupby(CASE_CONCEPT_NAME)
+                new_handler.reduced_grouped_dataframe = new_handler.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
+                new_handler.calculate_cases_number()
+                new_handler.calculate_variants_number()
+                new_handler.calculate_events_number()
             return new_handler
         return self.first_ancestor
 
@@ -244,14 +267,18 @@ class ParquetHandler(object):
         new_handler.copy_from_ancestor(self.first_ancestor)
         for filter in all_filters:
             new_handler.add_filter0(filter)
-        new_handler.reduced_dataframe = new_handler.dataframe[
-            [CASE_CONCEPT_NAME, self.activity_key, DEFAULT_TIMESTAMP_KEY]]
-        new_handler.build_variants_df()
-        new_handler.grouped_dataframe = new_handler.dataframe.groupby(CASE_CONCEPT_NAME)
-        new_handler.reduced_grouped_dataframe = new_handler.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
-        new_handler.calculate_cases_number()
-        new_handler.calculate_variants_number()
-        new_handler.calculate_events_number()
+        new_handler.events_number = -1
+        new_handler.cases_number = -1
+        new_handler.variants_number = -1
+
+        if not self.is_lazy:
+            new_handler.build_reduced_dataframe()
+            new_handler.build_variants_df()
+            new_handler.grouped_dataframe = new_handler.dataframe.groupby(CASE_CONCEPT_NAME)
+            new_handler.reduced_grouped_dataframe = new_handler.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
+            new_handler.calculate_cases_number()
+            new_handler.calculate_variants_number()
+            new_handler.calculate_events_number()
         return new_handler
 
     def add_filter0(self, filter):
@@ -266,8 +293,8 @@ class ParquetHandler(object):
         parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.grouped_dataframe
-        # parameters["variants_df"] = self.variants_df
+        if self.grouped_dataframe is not None:
+            parameters[constants.GROUPED_DATAFRAME] = self.grouped_dataframe
         self.dataframe = filtering_factory.apply(self.dataframe, filter, parameters=parameters)
         self.filters_chain.append(filter)
 
@@ -284,11 +311,48 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        # parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
-        self.variants_df = case_statistics.get_variants_df_with_case_duration(self.reduced_dataframe,
+        if self.reduced_dataframe is not None:
+            dataframe = self.reduced_dataframe
+        else:
+            dataframe = self.dataframe
+
+        self.variants_df = case_statistics.get_variants_df_with_case_duration(dataframe,
                                                                               parameters=parameters)
         self.save_most_common_variant(self.variants_df)
+
+    def get_variants_df(self):
+        """
+        Returns the variant dataframe
+
+        Returns
+        --------------
+        variants_df
+            Variants dataframe
+        """
+        if self.variants_df is None:
+            self.build_variants_df()
+
+        return self.variants_df
+
+    def build_reduced_dataframe(self):
+        """
+        Builds the reduced dataframe
+        """
+        self.reduced_dataframe = self.dataframe[[CASE_CONCEPT_NAME, self.activity_key, DEFAULT_TIMESTAMP_KEY]]
+
+    def get_reduced_dataframe(self):
+        """
+        Gets the reduced dataframe
+
+        Returns
+        ---------------
+        reduced_dataframe
+            Dataframe containing only 3 columns
+        """
+        if self.reduced_dataframe is None:
+            self.build_reduced_dataframe()
+        return self.reduced_dataframe
 
     def save_most_common_variant(self, variants_df):
         variants_df["count"] = 1
@@ -314,14 +378,12 @@ class ParquetHandler(object):
         """
         Calculate the number of variants in this log
         """
-        # self.variants_number = len(self.variants_df.groupby("variant"))
-        self.variants_number = self.variants_df["variant"].nunique()
+        self.variants_number = self.get_variants_df()["variant"].nunique()
 
     def calculate_cases_number(self):
         """
         Calculate the number of cases in this log
         """
-        # self.cases_number = len(self.grouped_dataframe)
         self.cases_number = self.dataframe["case:concept:name"].nunique()
 
     def calculate_events_number(self):
@@ -329,6 +391,45 @@ class ParquetHandler(object):
         Calculate the number of events in this log
         """
         self.events_number = len(self.dataframe)
+
+    def get_variants_number(self):
+        """
+        Returns the number of variants in the log
+
+        Returns
+        --------------
+        variants_number
+            Number of variants in the log
+        """
+        if self.variants_number == -1:
+            self.calculate_variants_number()
+        return self.variants_number
+
+    def get_cases_number(self):
+        """
+        Returns the number of cases in the log
+
+        Returns
+        ---------------
+        cases_number
+            Number of cases in the log
+        """
+        if self.cases_number == -1:
+            self.calculate_cases_number()
+        return self.cases_number
+
+    def get_events_number(self):
+        """
+        Returns the number of events in the log
+
+        Returns
+        --------------
+        events_number
+            Number of events in the log
+        """
+        if self.events_number == -1:
+            self.calculate_events_number()
+        return self.events_number
 
     def get_schema(self, variant=process_schema_factory.DFG_FREQ, parameters=None):
         """
@@ -354,14 +455,21 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[ws_constants.PARAM_MOST_COMMON_VARIANT] = self.most_common_variant
-        parameters[ws_constants.PARAM_MOST_COMMON_PATHS] = self.most_common_paths
 
-        if Configuration.parquet_performance_setting1:
+        if not self.sorted_dataframe:
+            self.sort_dataframe_by_case_id()
+
+        if self.most_common_variant is not None:
+            parameters[ws_constants.PARAM_MOST_COMMON_VARIANT] = self.most_common_variant
+            parameters[ws_constants.PARAM_MOST_COMMON_PATHS] = self.most_common_paths
+
+        if Configuration.parquet_performance_setting1 and self.reduced_grouped_dataframe is not None:
             parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
-        parameters["variants_df"] = self.variants_df
-        return process_schema_factory.apply(self.reduced_dataframe, variant=variant, parameters=parameters)
+        if self.variants_df is not None:
+            parameters["variants_df"] = self.variants_df
+
+        return process_schema_factory.apply(self.get_reduced_dataframe(), variant=variant, parameters=parameters)
 
     def get_numeric_attribute_svg(self, attribute, parameters=None):
         """
@@ -378,7 +486,8 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.grouped_dataframe
+        if self.grouped_dataframe is not None:
+            parameters[constants.GROUPED_DATAFRAME] = self.grouped_dataframe
 
         return numeric_attribute.get_numeric_attribute_distr_svg(self.dataframe, attribute, parameters=parameters)
 
@@ -400,9 +509,10 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
+        if self.reduced_grouped_dataframe is not None:
+            parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
-        return case_duration.get_case_duration_svg(self.reduced_dataframe, parameters=parameters)
+        return case_duration.get_case_duration_svg(self.get_reduced_dataframe(), parameters=parameters)
 
     def get_events_per_time_svg(self, parameters=None):
         """
@@ -422,9 +532,10 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
+        if self.reduced_grouped_dataframe is not None:
+            parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
-        return events_per_time.get_events_per_time_svg(self.reduced_dataframe, parameters=parameters)
+        return events_per_time.get_events_per_time_svg(self.get_reduced_dataframe(), parameters=parameters)
 
     def get_variant_statistics(self, parameters=None):
         """
@@ -446,9 +557,11 @@ class ParquetHandler(object):
             "max_no_variants"] if "max_no_variants" in parameters else ws_constants.MAX_NO_VARIANTS_TO_RETURN
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
-        parameters["variants_df"] = self.variants_df
-        variants_stats = variants.get_statistics(self.reduced_dataframe, parameters=parameters)
+        if self.reduced_grouped_dataframe is not None:
+            parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
+        if self.variants_df is not None:
+            parameters["variants_df"] = self.get_variants_df()
+        variants_stats = variants.get_statistics(self.get_reduced_dataframe(), parameters=parameters)
         variants_stats = variants_stats[0:min(len(variants_stats), max_no_variants)]
 
         return variants_stats
@@ -473,7 +586,8 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.grouped_dataframe
+        if not self.grouped_dataframe is None:
+            parameters[constants.GROUPED_DATAFRAME] = self.grouped_dataframe
 
         return sna_obtainer.apply(self.dataframe, variant=variant, parameters=parameters)
 
@@ -497,9 +611,10 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
+        if self.reduced_grouped_dataframe is not None:
+            parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
-        return transient.apply(self.reduced_dataframe, delay, parameters=parameters)
+        return transient.apply(self.get_reduced_dataframe(), delay, parameters=parameters)
 
     def get_case_statistics(self, parameters=None):
         """
@@ -519,7 +634,8 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
+        if self.reduced_grouped_dataframe is not None:
+            parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
         #parameters["max_ret_cases"] = ws_constants.MAX_NO_CASES_TO_RETURN
         parameters["sort_by_column"] = parameters[
             "sort_by_column"] if "sort_by_column" in parameters else "caseDuration"
@@ -534,12 +650,12 @@ class ParquetHandler(object):
             var_to_filter = var_to_filter.replace(" complete", "+complete")
             var_to_filter = var_to_filter.replace(" COMPLETE", "+COMPLETE")
 
-            filtered_dataframe = variants_filter.apply(self.reduced_dataframe, [var_to_filter], parameters=parameters)
+            filtered_dataframe = variants_filter.apply(self.get_reduced_dataframe(), [var_to_filter], parameters=parameters)
             return casestats.include_key_in_value_list(
                 case_statistics.get_cases_description(filtered_dataframe, parameters=parameters))
         else:
             return casestats.include_key_in_value_list(
-                case_statistics.get_cases_description(self.reduced_dataframe, parameters=parameters))
+                case_statistics.get_cases_description(self.get_reduced_dataframe(), parameters=parameters))
 
     def get_events(self, caseid, parameters=None):
         """
@@ -561,7 +677,8 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.grouped_dataframe
+        if not self.grouped_dataframe is None:
+            parameters[constants.GROUPED_DATAFRAME] = self.grouped_dataframe
         return case_statistics.get_events(self.dataframe, caseid, parameters=parameters)
 
     def download_xes_log(self):
@@ -589,9 +706,10 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
+        if self.reduced_grouped_dataframe is not None:
+            parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
-        return start_activities_filter.get_start_activities(self.reduced_dataframe, parameters=parameters)
+        return start_activities_filter.get_start_activities(self.get_reduced_dataframe(), parameters=parameters)
 
     def get_end_activities(self, parameters=None):
         """
@@ -606,9 +724,10 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
+        if self.reduced_grouped_dataframe is not None:
+            parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
-        return end_activities_filter.get_end_activities(self.reduced_dataframe, parameters=parameters)
+        return end_activities_filter.get_end_activities(self.get_reduced_dataframe(), parameters=parameters)
 
     def get_attributes_list(self, parameters=None):
         """
@@ -634,7 +753,8 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.grouped_dataframe
+        if not self.grouped_dataframe is None:
+            parameters[constants.GROUPED_DATAFRAME] = self.grouped_dataframe
 
         initial_dict = attributes_filter.get_attribute_values(self.dataframe, attribute_key, parameters=parameters)
         return_dict = {}
@@ -687,13 +807,13 @@ class ParquetHandler(object):
             parameters = {}
         parameters[constants.PARAMETER_CONSTANT_ACTIVITY_KEY] = self.activity_key
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
-        parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
+        if self.reduced_grouped_dataframe is not None:
+            parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
-        return get_align.perform_alignments(self.reduced_dataframe, petri_string, parameters=parameters)
+        return get_align.perform_alignments(self.get_reduced_dataframe(), petri_string, parameters=parameters)
 
 
-    def get_trace_attributes(self):
-        trace_attr = []
+def get_trace_attributes(self):
+    trace_attr = []
 
-        return trace_attr
-
+    return trace_attr

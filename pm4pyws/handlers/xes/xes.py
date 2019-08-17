@@ -46,11 +46,11 @@ class XesHandler(object):
         # most common variant (paths)
         self.most_common_paths = None
         # number of variants
-        self.variants_number = 0
+        self.variants_number = -1
         # number of cases
-        self.cases_number = 0
+        self.cases_number = -1
         # number of events
-        self.events_number = 0
+        self.events_number = -1
 
     def get_filters_chain_repr(self):
         """
@@ -98,6 +98,9 @@ class XesHandler(object):
         new_handler.copy_from_ancestor(self.first_ancestor)
         for filter in all_filters:
             new_handler.add_filter0(filter)
+        new_handler.variants_number = -1
+        new_handler.cases_number = -1
+        new_handler.events_number = -1
         new_handler.build_variants()
         new_handler.calculate_events_number()
         new_handler.calculate_cases_number()
@@ -124,6 +127,9 @@ class XesHandler(object):
         new_handler.copy_from_ancestor(self.first_ancestor)
         for filter in all_filters:
             new_handler.add_filter0(filter)
+        new_handler.variants_number = -1
+        new_handler.cases_number = -1
+        new_handler.events_number = -1
         new_handler.build_variants()
         new_handler.calculate_events_number()
         new_handler.calculate_cases_number()
@@ -233,6 +239,45 @@ class XesHandler(object):
         Calculate the number of events in this log
         """
         self.events_number = sum([len(case) for case in self.log])
+
+    def get_variants_number(self):
+        """
+        Returns the number of variants in the log
+
+        Returns
+        --------------
+        variants_number
+            Number of variants in the log
+        """
+        if self.variants_number == -1:
+            self.calculate_variants_number()
+        return self.variants_number
+
+    def get_cases_number(self):
+        """
+        Returns the number of cases in the log
+
+        Returns
+        ---------------
+        cases_number
+            Number of cases in the log
+        """
+        if self.cases_number == -1:
+            self.calculate_cases_number()
+        return self.cases_number
+
+    def get_events_number(self):
+        """
+        Returns the number of events in the log
+
+        Returns
+        --------------
+        events_number
+            Number of events in the log
+        """
+        if self.events_number == -1:
+            self.calculate_events_number()
+        return self.events_number
 
     def get_schema(self, variant=process_schema_factory.DFG_FREQ, parameters=None):
         """
