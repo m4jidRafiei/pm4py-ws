@@ -76,7 +76,7 @@ class MultiNodeSessionHandler(LogHandler):
         temp_log_path = os.path.join(Configuration.temp_logs_path, str(log_name)+"_"+str(session)+"."+extension)
         if os.path.exists(temp_log_path):
             if is_parquet:
-                handler = ParquetHandler()
+                handler = ParquetHandler(is_lazy=True)
                 handler.build_from_path(temp_log_path)
             else:
                 handler = XesHandler()
@@ -96,10 +96,10 @@ class MultiNodeSessionHandler(LogHandler):
         file_path = self.logs_correspondence[log_name]
 
         if file_path.endswith(".parquet"):
-            handler = ParquetHandler()
+            handler = ParquetHandler(is_lazy=True)
             handler.build_from_path(file_path)
         elif file_path.endswith(".csv"):
-            handler = ParquetHandler()
+            handler = ParquetHandler(is_lazy=True)
             handler.build_from_csv(file_path)
         elif file_path.endswith(".xes") or file_path.endswith(".xes.gz"):
             handler = XesHandler()
