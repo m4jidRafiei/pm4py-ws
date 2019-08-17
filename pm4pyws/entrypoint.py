@@ -173,7 +173,7 @@ def get_process_schema():
                 handler = lh.get_handler_for_process_and_session(process, session)
                 filters_chain = handler.get_filters_chain_repr()
                 ps_repr = process + "@@" + variant + "@@" + str(simplicity) + "@@" + filters_chain
-                saved_obj = lh.get_object_memory(ps_repr)
+                saved_obj = lh.get_object_memory(ps_repr) if Configuration.enable_process_caching else None
                 if saved_obj is not None:
                     base64 = saved_obj[0]
                     model = saved_obj[1]
@@ -368,15 +368,16 @@ def get_sna():
 
         logging.info("get_sna start session=" + str(session) + " process=" + str(process))
 
-        if check_session_validity(session):
-            user = get_user_from_session(session)
-            if lh.check_user_log_visibility(user, process):
-                metric = request.args.get('metric', default='handover', type=str)
-                threshold = request.args.get('threshold', default=0.0, type=float)
-                sna = lh.get_handler_for_process_and_session(process, session).get_sna(variant=metric, parameters={
-                    "weight_threshold": threshold})
+        if Configuration.overall_enable_sna:
+            if check_session_validity(session):
+                user = get_user_from_session(session)
+                if lh.check_user_log_visibility(user, process):
+                    metric = request.args.get('metric', default='handover', type=str)
+                    threshold = request.args.get('threshold', default=0.0, type=float)
+                    sna = lh.get_handler_for_process_and_session(process, session).get_sna(variant=metric, parameters={
+                        "weight_threshold": threshold})
 
-            logging.info("get_sna complete session=" + str(session) + " process=" + str(process) + " user=" + str(user))
+                logging.info("get_sna complete session=" + str(session) + " process=" + str(process) + " user=" + str(user))
     except:
         logging.error(traceback.format_exc())
         sna = ""
@@ -400,6 +401,8 @@ def get_all_variants():
     session = request.args.get('session', type=str)
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
+    # reads the maximum number of variants to return
+    max_no_variants = request.args.get('max_no_variants', default=constants.MAX_NO_VARIANTS_TO_RETURN, type=int)
 
     logging.info("get_all_variants start session=" + str(session) + " process=" + str(process))
 
@@ -408,7 +411,11 @@ def get_all_variants():
     if check_session_validity(session):
         user = get_user_from_session(session)
         if lh.check_user_log_visibility(user, process):
-            variants = lh.get_handler_for_process_and_session(process, session).get_variant_statistics()
+            parameters = {}
+            parameters["max_no_variants"] = int(max_no_variants)
+
+            variants = lh.get_handler_for_process_and_session(process, session).get_variant_statistics(
+                parameters=parameters)
             dictio = {"variants": variants}
 
         logging.info(
@@ -435,6 +442,7 @@ def get_all_cases():
     session = request.args.get('session', type=str)
     process = request.args.get('process', default='receipt', type=str)
     variant = request.args.get('variant', type=str)
+    max_no_cases = request.args.get('max_no_cases', default=constants.MAX_NO_CASES_TO_RETURN, type=int)
 
     logging.info("get_events start session=" + str(session) + " process=" + str(process) + " variant=" + str(variant))
 
@@ -446,6 +454,8 @@ def get_all_cases():
             parameters = {}
             if variant is not None:
                 parameters["variant"] = variant
+            parameters["max_ret_cases"] = int(max_no_cases)
+
             cases_list = lh.get_handler_for_process_and_session(process, session).get_case_statistics(
                 parameters=parameters)
             dictio = {"cases": cases_list}
@@ -622,22 +632,23 @@ def do_transient_analysis():
 
     dictio = {}
 
-    if check_session_validity(session):
-        user = get_user_from_session(session)
-        if lh.check_user_log_visibility(user, process):
-            Commons.semaphore_matplot.acquire()
-            try:
-                delay = request.args.get('delay', default=86400, type=float)
+    if Configuration.overall_enable_transient:
+        if check_session_validity(session):
+            user = get_user_from_session(session)
+            if lh.check_user_log_visibility(user, process):
+                Commons.semaphore_matplot.acquire()
+                try:
+                    delay = request.args.get('delay', default=86400, type=float)
 
-                base64, gviz = lh.get_handler_for_process_and_session(process, session).get_transient(delay)
-                dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz.decode('utf-8')}
-            except:
-                logging.error(traceback.format_exc())
-            Commons.semaphore_matplot.release()
+                    base64, gviz = lh.get_handler_for_process_and_session(process, session).get_transient(delay)
+                    dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz.decode('utf-8')}
+                except:
+                    logging.error(traceback.format_exc())
+                Commons.semaphore_matplot.release()
 
-        logging.info(
-            "do_transient_analysis complete session=" + str(session) + " process=" + str(process) + " user=" + str(
-                user))
+            logging.info(
+                "do_transient_analysis complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
 
     ret = jsonify(dictio)
     return ret
@@ -976,34 +987,35 @@ def upload_log():
 
     logging.info("upload_log start session=" + str(session))
 
-    if check_session_validity(session):
-        user = get_user_from_session(session)
-        if lh.check_user_enabled_upload(user):
-            try:
-                filename = request.json["filename"]
-                base64_content = request.json["base64"]
-                basename = filename.split(".")[0] + "_" + generate_random_string(4)
-                extension = filename.split(".")[1]
-                base64_content = base64_content.split(";base64,")[1]
-                stru = base64.b64decode(base64_content).decode('utf-8')
+    if Configuration.enable_upload:
+        if check_session_validity(session):
+            user = get_user_from_session(session)
+            if lh.check_user_enabled_upload(user):
+                try:
+                    filename = request.json["filename"]
+                    base64_content = request.json["base64"]
+                    basename = filename.split(".")[0] + "_" + generate_random_string(4)
+                    extension = filename.split(".")[1]
+                    base64_content = base64_content.split(";base64,")[1]
+                    stru = base64.b64decode(base64_content).decode('utf-8')
 
-                if extension.lower() == "xes" or extension.lower() == "csv" or extension.lower() == "parquet":
-                    filepath = os.path.join(Configuration.event_logs_path, basename + "." + extension)
-                    F = open(filepath, "w")
-                    F.write(stru)
-                    F.close()
+                    if extension.lower() == "xes" or extension.lower() == "csv" or extension.lower() == "parquet":
+                        filepath = os.path.join(Configuration.event_logs_path, basename + "." + extension)
+                        F = open(filepath, "w")
+                        F.write(stru)
+                        F.close()
 
-                    if Configuration.upload_as_temporary:
-                        lh.manage_upload(user, basename, filepath, True)
-                    else:
-                        lh.manage_upload(user, basename, filepath, False)
+                        if Configuration.upload_as_temporary:
+                            lh.manage_upload(user, basename, filepath, True)
+                        else:
+                            lh.manage_upload(user, basename, filepath, False)
 
-                    logging.info("upload_log complete session=" + str(session) + " user=" + str(user))
+                        logging.info("upload_log complete session=" + str(session) + " user=" + str(user))
 
-                    return jsonify({"status": "OK"})
-            except:
-                logging.error(traceback.format_exc())
-                pass
+                        return jsonify({"status": "OK"})
+                except:
+                    logging.error(traceback.format_exc())
+                    pass
 
     return jsonify({"status": "FAIL"})
 
@@ -1029,24 +1041,26 @@ def get_alignments():
 
     dictio = {}
 
-    if check_session_validity(session):
-        user = get_user_from_session(session)
-        if lh.check_user_log_visibility(user, process):
-            Commons.semaphore_matplot.acquire()
-            try:
-                petri_string = request.json["model"]
-                svg_on_petri, svg_table = lh.get_handler_for_process_and_session(process, session).get_alignments(
-                    petri_string,
-                    parameters={})
-                dictio = {"petri": svg_on_petri.decode('utf-8'), "table": svg_table.decode('utf-8')}
-            except:
-                logging.error(traceback.format_exc())
-                pass
+    if Configuration.overall_enable_alignments:
+        if check_session_validity(session):
+            user = get_user_from_session(session)
+            if lh.check_user_log_visibility(user, process):
+                Commons.semaphore_matplot.acquire()
+                try:
+                    petri_string = request.json["model"]
+                    svg_on_petri, svg_table = lh.get_handler_for_process_and_session(process, session).get_alignments(
+                        petri_string,
+                        parameters={})
+                    dictio = {"petri": svg_on_petri.decode('utf-8'), "table": svg_table.decode('utf-8')}
+                except:
+                    logging.error(traceback.format_exc())
+                    pass
 
-            logging.info(
-                "get_alignments complete session=" + str(session) + " process=" + str(process) + " user=" + str(user))
+                logging.info(
+                    "get_alignments complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                        user))
 
-            Commons.semaphore_matplot.release()
+                Commons.semaphore_matplot.release()
 
     ret = jsonify(dictio)
 
@@ -1147,17 +1161,19 @@ def get_user_log_visibilities():
 
     logging.info("get_user_log_visibilities start session=" + str(session))
 
-    if check_session_validity(session):
-        this_user = get_user_from_session(session)
-        is_admin = lh.check_is_admin(this_user)
+    if Configuration.overall_enable_sharing:
+        if check_session_validity(session):
+            this_user = get_user_from_session(session)
+            is_admin = lh.check_is_admin(this_user)
 
-        if is_admin:
-            sorted_users, sorted_logs, user_log_vis = lh.get_user_eventlog_vis_down_remov()
+            if is_admin:
+                sorted_users, sorted_logs, user_log_vis = lh.get_user_eventlog_vis_down_remov()
 
-            logging.info("get_user_log_visibilities complete session=" + str(session) + " this_user=" + str(this_user))
+                logging.info(
+                    "get_user_log_visibilities complete session=" + str(session) + " this_user=" + str(this_user))
 
-            return jsonify({"success": True, "sorted_users": sorted_users, "sorted_logs": sorted_logs,
-                            "user_log_visibility": user_log_vis})
+                return jsonify({"success": True, "sorted_users": sorted_users, "sorted_logs": sorted_logs,
+                                "user_log_visibility": user_log_vis})
 
     return jsonify({"success": False})
 
@@ -1171,20 +1187,21 @@ def add_user_log_visibility():
 
     logging.info("add_user_log_visibility start session=" + str(session))
 
-    if check_session_validity(session):
-        this_user = get_user_from_session(session)
-        is_admin = lh.check_is_admin(this_user)
+    if Configuration.overall_enable_sharing:
+        if check_session_validity(session):
+            this_user = get_user_from_session(session)
+            is_admin = lh.check_is_admin(this_user)
 
-        if is_admin:
-            user = request.args.get('user', type=str)
-            process = request.args.get('process', type=str)
+            if is_admin:
+                user = request.args.get('user', type=str)
+                process = request.args.get('process', type=str)
 
-            lh.add_user_eventlog_visibility(user, process)
+                lh.add_user_eventlog_visibility(user, process)
 
-            logging.info("add_user_log_visibility complete session=" + str(session) + " this_user=" + str(
-                this_user) + " user=" + str(user) + " process=" + str(process))
+                logging.info("add_user_log_visibility complete session=" + str(session) + " this_user=" + str(
+                    this_user) + " user=" + str(user) + " process=" + str(process))
 
-            return jsonify({"success": True})
+                return jsonify({"success": True})
 
     return jsonify({"success": False})
 
@@ -1198,20 +1215,21 @@ def remove_user_log_visibility():
 
     logging.info("remove_user_log_visibility start session=" + str(session))
 
-    if check_session_validity(session):
-        this_user = get_user_from_session(session)
-        is_admin = lh.check_is_admin(this_user)
+    if Configuration.overall_enable_sharing:
+        if check_session_validity(session):
+            this_user = get_user_from_session(session)
+            is_admin = lh.check_is_admin(this_user)
 
-        if is_admin:
-            user = request.args.get('user', type=str)
-            process = request.args.get('process', type=str)
+            if is_admin:
+                user = request.args.get('user', type=str)
+                process = request.args.get('process', type=str)
 
-            lh.remove_user_eventlog_visibility(user, process)
+                lh.remove_user_eventlog_visibility(user, process)
 
-            logging.info("remove_user_log_visibility complete session=" + str(session) + " this_user=" + str(
-                this_user) + " user=" + str(user) + " process=" + str(process))
+                logging.info("remove_user_log_visibility complete session=" + str(session) + " this_user=" + str(
+                    this_user) + " user=" + str(user) + " process=" + str(process))
 
-            return jsonify({"success": True})
+                return jsonify({"success": True})
 
     return jsonify({"success": False})
 
@@ -1225,20 +1243,21 @@ def add_user_log_downloadable():
 
     logging.info("add_user_log_downloadable start session=" + str(session))
 
-    if check_session_validity(session):
-        this_user = get_user_from_session(session)
-        is_admin = lh.check_is_admin(this_user)
+    if Configuration.overall_enable_sharing:
+        if check_session_validity(session):
+            this_user = get_user_from_session(session)
+            is_admin = lh.check_is_admin(this_user)
 
-        if is_admin:
-            user = request.args.get('user', type=str)
-            process = request.args.get('process', type=str)
+            if is_admin:
+                user = request.args.get('user', type=str)
+                process = request.args.get('process', type=str)
 
-            lh.add_user_eventlog_downloadable(user, process)
+                lh.add_user_eventlog_downloadable(user, process)
 
-            logging.info("add_user_log_downloadable complete session=" + str(session) + " this_user=" + str(
-                this_user) + " user=" + str(user) + " process=" + str(process))
+                logging.info("add_user_log_downloadable complete session=" + str(session) + " this_user=" + str(
+                    this_user) + " user=" + str(user) + " process=" + str(process))
 
-            return jsonify({"success": True})
+                return jsonify({"success": True})
 
     return jsonify({"success": False})
 
@@ -1252,20 +1271,21 @@ def remove_user_log_downloadable():
 
     logging.info("remove_user_log_downloadable start session=" + str(session))
 
-    if check_session_validity(session):
-        this_user = get_user_from_session(session)
-        is_admin = lh.check_is_admin(this_user)
+    if Configuration.overall_enable_sharing:
+        if check_session_validity(session):
+            this_user = get_user_from_session(session)
+            is_admin = lh.check_is_admin(this_user)
 
-        if is_admin:
-            user = request.args.get('user', type=str)
-            process = request.args.get('process', type=str)
+            if is_admin:
+                user = request.args.get('user', type=str)
+                process = request.args.get('process', type=str)
 
-            lh.remove_user_eventlog_downloadable(user, process)
+                lh.remove_user_eventlog_downloadable(user, process)
 
-            logging.info("remove_user_log_downloadable complete session=" + str(session) + " this_user=" + str(
-                this_user) + " user=" + str(user) + " process=" + str(process))
+                logging.info("remove_user_log_downloadable complete session=" + str(session) + " this_user=" + str(
+                    this_user) + " user=" + str(user) + " process=" + str(process))
 
-            return jsonify({"success": True})
+                return jsonify({"success": True})
 
     return jsonify({"success": False})
 
@@ -1279,20 +1299,21 @@ def add_user_log_removable():
 
     logging.info("add_user_log_removable start session=" + str(session))
 
-    if check_session_validity(session):
-        this_user = get_user_from_session(session)
-        is_admin = lh.check_is_admin(this_user)
+    if Configuration.overall_enable_sharing:
+        if check_session_validity(session):
+            this_user = get_user_from_session(session)
+            is_admin = lh.check_is_admin(this_user)
 
-        if is_admin:
-            user = request.args.get('user', type=str)
-            process = request.args.get('process', type=str)
+            if is_admin:
+                user = request.args.get('user', type=str)
+                process = request.args.get('process', type=str)
 
-            lh.add_user_eventlog_removable(user, process)
+                lh.add_user_eventlog_removable(user, process)
 
-            logging.info("add_user_log_removable complete session=" + str(session) + " this_user=" + str(
-                this_user) + " user=" + str(user) + " process=" + str(process))
+                logging.info("add_user_log_removable complete session=" + str(session) + " this_user=" + str(
+                    this_user) + " user=" + str(user) + " process=" + str(process))
 
-            return jsonify({"success": True})
+                return jsonify({"success": True})
 
     return jsonify({"success": False})
 
@@ -1306,20 +1327,21 @@ def remove_user_log_removable():
 
     logging.info("remove_user_log_removable start session=" + str(session))
 
-    if check_session_validity(session):
-        this_user = get_user_from_session(session)
-        is_admin = lh.check_is_admin(this_user)
+    if Configuration.overall_enable_sharing:
+        if check_session_validity(session):
+            this_user = get_user_from_session(session)
+            is_admin = lh.check_is_admin(this_user)
 
-        if is_admin:
-            user = request.args.get('user', type=str)
-            process = request.args.get('process', type=str)
+            if is_admin:
+                user = request.args.get('user', type=str)
+                process = request.args.get('process', type=str)
 
-            lh.remove_user_eventlog_removable(user, process)
+                lh.remove_user_eventlog_removable(user, process)
 
-            logging.info("remove_user_log_removable complete session=" + str(session) + " this_user=" + str(
-                this_user) + " user=" + str(user) + " process=" + str(process))
+                logging.info("remove_user_log_removable complete session=" + str(session) + " this_user=" + str(
+                    this_user) + " user=" + str(user) + " process=" + str(process))
 
-            return jsonify({"success": True})
+                return jsonify({"success": True})
 
     return jsonify({"success": False})
 
@@ -1333,13 +1355,14 @@ def deleteEventLog():
     # reads the requested process name
     process = request.args.get('process', default='receipt', type=str)
 
-    if check_session_validity(session):
-        user = get_user_from_session(session)
+    if Configuration.overall_enable_deletion:
+        if check_session_validity(session):
+            user = get_user_from_session(session)
 
-        if lh.can_delete(user, process):
-            lh.delete_log(process)
+            if lh.can_delete(user, process):
+                lh.delete_log(process)
 
-            return jsonify({"success": True})
+                return jsonify({"success": True})
 
     return jsonify({"success": False})
 

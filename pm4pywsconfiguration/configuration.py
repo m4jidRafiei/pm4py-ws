@@ -1,6 +1,6 @@
 enable_upload = False
 enable_download = False
-enable_load_local_path = True
+enable_load_local_path = False
 enable_session = False
 upload_as_temporary = True
 session_duration = 86400
@@ -18,3 +18,9 @@ users_db_path = sql3_databases_path + '/users.db'
 ssl_context_directory = 'ssl_cert_gen'
 log_manager_default_variant = "basic_log_session_handling"
 parquet_performance_setting1 = True
+enable_process_caching = False
+overall_enable_alignments = True
+overall_enable_transient = True
+overall_enable_sna = True
+overall_enable_sharing = True
+overall_enable_deletion = True
