@@ -97,9 +97,9 @@ class ParquetHandler(object):
         self.activity_key = ancestor.activity_key
         # self.filters_chain = ancestor.filters_chain
         self.dataframe = ancestor.dataframe
-        self.grouped_dataframe = ancestor.grouped_dataframe
-        self.reduced_dataframe = ancestor.reduced_dataframe
-        self.reduced_grouped_dataframe = ancestor.reduced_grouped_dataframe
+        #self.grouped_dataframe = ancestor.grouped_dataframe
+        #self.reduced_dataframe = ancestor.reduced_dataframe
+        #self.reduced_grouped_dataframe = ancestor.reduced_grouped_dataframe
         self.is_lazy = ancestor.is_lazy
         self.sorted_dataframe = ancestor.sorted_dataframe
 
