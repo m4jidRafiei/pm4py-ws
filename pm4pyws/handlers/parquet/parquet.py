@@ -97,9 +97,9 @@ class ParquetHandler(object):
         self.activity_key = ancestor.activity_key
         # self.filters_chain = ancestor.filters_chain
         self.dataframe = ancestor.dataframe
-        self.grouped_dataframe = ancestor.grouped_dataframe
-        self.reduced_dataframe = ancestor.reduced_dataframe
-        self.reduced_grouped_dataframe = ancestor.reduced_grouped_dataframe
+        #self.grouped_dataframe = ancestor.grouped_dataframe
+        #self.reduced_dataframe = ancestor.reduced_dataframe
+        #self.reduced_grouped_dataframe = ancestor.reduced_grouped_dataframe
         self.is_lazy = ancestor.is_lazy
         self.sorted_dataframe = ancestor.sorted_dataframe
 
@@ -120,13 +120,14 @@ class ParquetHandler(object):
         # TODO: verify if this is the best way to act
         self.dataframe[DEFAULT_TIMESTAMP_KEY] = pd.to_datetime(self.dataframe[DEFAULT_TIMESTAMP_KEY], utc=True)
         self.postloading_processing_dataframe()
-        self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[CASE_CONCEPT_NAME].astype(str)
+        if not str(self.dataframe[CASE_CONCEPT_NAME].dtype) == "object":
+            self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[CASE_CONCEPT_NAME].astype(str)
         if not self.is_lazy:
             self.sort_dataframe_by_case_id()
             self.build_reduced_dataframe()
             self.build_variants_df()
-            self.grouped_dataframe = self.dataframe.groupby(CASE_CONCEPT_NAME)
-            self.reduced_grouped_dataframe = self.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
+            self.build_grouped_dataframe()
+            self.build_reduced_grouped_dataframe()
             self.calculate_events_number()
             self.calculate_variants_number()
             self.calculate_cases_number()
@@ -176,13 +177,16 @@ class ParquetHandler(object):
         if not case_id_glue == CASE_CONCEPT_NAME:
             self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[case_id_glue]
         self.postloading_processing_dataframe()
-        self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[CASE_CONCEPT_NAME].astype(str)
+
+        if not str(self.dataframe[CASE_CONCEPT_NAME].dtype) == "object":
+            self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[CASE_CONCEPT_NAME].astype(str)
+
         if not self.is_lazy:
             self.sort_dataframe_by_case_id()
             self.build_reduced_dataframe()
             self.build_variants_df()
-            self.grouped_dataframe = self.dataframe.groupby(CASE_CONCEPT_NAME)
-            self.reduced_grouped_dataframe = self.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
+            self.build_grouped_dataframe()
+            self.build_reduced_grouped_dataframe()
             self.calculate_variants_number()
             self.calculate_cases_number()
             self.calculate_events_number()
@@ -192,24 +196,30 @@ class ParquetHandler(object):
         Postloading processing of the dataframe
         """
 
-        self.dataframe[xes.DEFAULT_NAME_KEY] = self.dataframe[xes.DEFAULT_NAME_KEY].astype(str)
-        if xes.DEFAULT_TRANSITION_KEY in self.dataframe:
-            self.dataframe[xes.DEFAULT_TRANSITION_KEY] = self.dataframe[xes.DEFAULT_TRANSITION_KEY].astype(str)
-            self.dataframe["@@classifier"] = self.dataframe[xes.DEFAULT_NAME_KEY] + "+" + self.dataframe[
-                xes.DEFAULT_TRANSITION_KEY]
-        else:
-            self.dataframe["@@classifier"] = self.dataframe[xes.DEFAULT_NAME_KEY]
         self.activity_key = "@@classifier"
+        if not str(self.dataframe[xes.DEFAULT_NAME_KEY].dtype) == "object":
+            self.dataframe[xes.DEFAULT_NAME_KEY] = self.dataframe[xes.DEFAULT_NAME_KEY].astype(str)
+        if xes.DEFAULT_TRANSITION_KEY in self.dataframe:
+            if not str(self.dataframe[xes.DEFAULT_TRANSITION_KEY].dtype) == "object":
+                self.dataframe[xes.DEFAULT_TRANSITION_KEY] = self.dataframe[xes.DEFAULT_TRANSITION_KEY].astype(str)
+
+        if not "@@classifier" in self.dataframe:
+            if xes.DEFAULT_TRANSITION_KEY in self.dataframe:
+                self.dataframe["@@classifier"] = self.dataframe[xes.DEFAULT_NAME_KEY] + "+" + self.dataframe[
+                    xes.DEFAULT_TRANSITION_KEY]
+            else:
+                self.dataframe["@@classifier"] = self.dataframe[xes.DEFAULT_NAME_KEY]
 
     def sort_dataframe_by_case_id(self):
         """
         Sort the dataframe by case ID
         """
-        if xes.DEFAULT_TIMESTAMP_KEY in self.dataframe:
-            self.dataframe = self.dataframe.sort_values([CASE_CONCEPT_NAME, xes.DEFAULT_TIMESTAMP_KEY])
-        else:
-            self.dataframe = self.dataframe.sort_values(CASE_CONCEPT_NAME)
-        self.sorted_dataframe = True
+        if not self.sorted_dataframe:
+            if xes.DEFAULT_TIMESTAMP_KEY in self.dataframe:
+                self.dataframe = self.dataframe.sort_values([CASE_CONCEPT_NAME, xes.DEFAULT_TIMESTAMP_KEY])
+            else:
+                self.dataframe = self.dataframe.sort_values(CASE_CONCEPT_NAME)
+            self.sorted_dataframe = True
 
     def remove_filter(self, filter, all_filters):
         """
@@ -239,8 +249,8 @@ class ParquetHandler(object):
             if not self.is_lazy:
                 new_handler.build_reduced_dataframe()
                 new_handler.build_variants_df()
-                new_handler.grouped_dataframe = new_handler.dataframe.groupby(CASE_CONCEPT_NAME)
-                new_handler.reduced_grouped_dataframe = new_handler.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
+                new_handler.build_grouped_dataframe()
+                new_handler.build_reduced_grouped_dataframe()
                 new_handler.calculate_cases_number()
                 new_handler.calculate_variants_number()
                 new_handler.calculate_events_number()
@@ -274,8 +284,8 @@ class ParquetHandler(object):
         if not self.is_lazy:
             new_handler.build_reduced_dataframe()
             new_handler.build_variants_df()
-            new_handler.grouped_dataframe = new_handler.dataframe.groupby(CASE_CONCEPT_NAME)
-            new_handler.reduced_grouped_dataframe = new_handler.reduced_dataframe.groupby(CASE_CONCEPT_NAME)
+            new_handler.build_grouped_dataframe()
+            new_handler.build_reduced_grouped_dataframe()
             new_handler.calculate_cases_number()
             new_handler.calculate_variants_number()
             new_handler.calculate_events_number()
@@ -353,6 +363,45 @@ class ParquetHandler(object):
         if self.reduced_dataframe is None:
             self.build_reduced_dataframe()
         return self.reduced_dataframe
+
+    def build_grouped_dataframe(self):
+        """
+        Saves the grouped dataframe
+        """
+        self.grouped_dataframe = self.dataframe.groupby(CASE_CONCEPT_NAME)
+
+    def get_grouped_dataframe(self):
+        """
+        Returns the grouped dataframe
+
+        Returns
+        --------------
+        grouped_dataframe
+            Grouped dataframe
+        """
+        if self.grouped_dataframe is None:
+            self.build_grouped_dataframe()
+        return self.grouped_dataframe
+
+    def build_reduced_grouped_dataframe(self):
+        """
+        Saves the reduced grouped dataframe
+        """
+        reduced_dataframe = self.get_reduced_dataframe()
+        self.reduced_grouped_dataframe = reduced_dataframe.groupby(CASE_CONCEPT_NAME)
+
+    def get_reduced_grouped_dataframe(self):
+        """
+        Returns the reduced grouped dataframe
+
+        Returns
+        ----------------
+        reduced_grouped_dataframe
+            Reduced grouped dataframe
+        """
+        if self.reduced_grouped_dataframe is None:
+            self.build_reduced_grouped_dataframe()
+        return self.reduced_grouped_dataframe
 
     def save_most_common_variant(self, variants_df):
         variants_df["count"] = 1
@@ -463,8 +512,7 @@ class ParquetHandler(object):
             parameters[ws_constants.PARAM_MOST_COMMON_VARIANT] = self.most_common_variant
             parameters[ws_constants.PARAM_MOST_COMMON_PATHS] = self.most_common_paths
 
-        if Configuration.parquet_performance_setting1 and self.reduced_grouped_dataframe is not None:
-            parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
+        parameters[constants.GROUPED_DATAFRAME] = self.get_reduced_grouped_dataframe()
 
         if self.variants_df is not None:
             parameters["variants_df"] = self.variants_df
