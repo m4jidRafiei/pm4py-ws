@@ -8,6 +8,15 @@ from pm4pyws.log_manager.interface.log_manager import LogHandler
 import time
 
 
+def singleton(class_):
+    instances = {}
+    def getinstance(*args, **kwargs):
+        if class_ not in instances:
+            instances[class_] = class_(*args, **kwargs)
+        return instances[class_]
+    return getinstance
+
+@singleton
 class BasicLogSessionHandler(LogHandler):
     def __init__(self, ex):
         # path to the database

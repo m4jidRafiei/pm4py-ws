@@ -10,6 +10,16 @@ from pm4py.objects.log.exporter.parquet import factory as parquet_exporter
 import time
 import os
 
+
+def singleton(class_):
+    instances = {}
+    def getinstance(*args, **kwargs):
+        if class_ not in instances:
+            instances[class_] = class_(*args, **kwargs)
+        return instances[class_]
+    return getinstance
+
+@singleton
 class MultiNodeSessionHandler(LogHandler):
     def __init__(self, ex):
         # path to the database

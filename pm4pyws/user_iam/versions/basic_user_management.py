@@ -7,6 +7,15 @@ from pm4pyws.user_iam.interface.user_management import UserManagement
 from pm4pywsconfiguration import configuration as Configuration
 
 
+def singleton(class_):
+    instances = {}
+    def getinstance(*args, **kwargs):
+        if class_ not in instances:
+            instances[class_] = class_(*args, **kwargs)
+        return instances[class_]
+    return getinstance
+
+@singleton
 class BasicUserManagement(UserManagement):
     def __init__(self, ex, parameters=None):
         self.user_db = Configuration.users_db_path
