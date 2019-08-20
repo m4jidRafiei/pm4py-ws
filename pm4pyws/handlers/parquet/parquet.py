@@ -32,6 +32,7 @@ from pm4pywsconfiguration import configuration as Configuration
 
 import pandas as pd
 import time
+import datetime
 
 
 class ParquetHandler(object):
@@ -97,9 +98,9 @@ class ParquetHandler(object):
         self.activity_key = ancestor.activity_key
         # self.filters_chain = ancestor.filters_chain
         self.dataframe = ancestor.dataframe
-        #self.grouped_dataframe = ancestor.grouped_dataframe
-        #self.reduced_dataframe = ancestor.reduced_dataframe
-        #self.reduced_grouped_dataframe = ancestor.reduced_grouped_dataframe
+        # self.grouped_dataframe = ancestor.grouped_dataframe
+        # self.reduced_dataframe = ancestor.reduced_dataframe
+        # self.reduced_grouped_dataframe = ancestor.reduced_grouped_dataframe
         self.is_lazy = ancestor.is_lazy
         self.sorted_dataframe = ancestor.sorted_dataframe
 
@@ -120,8 +121,11 @@ class ParquetHandler(object):
         # TODO: verify if this is the best way to act
         self.dataframe[DEFAULT_TIMESTAMP_KEY] = pd.to_datetime(self.dataframe[DEFAULT_TIMESTAMP_KEY], utc=True)
         self.postloading_processing_dataframe()
+        self.dataframe = self.dataframe.sort_values([DEFAULT_TIMESTAMP_KEY, ws_constants.DEFAULT_EVENT_INDEX_KEY])
         if not str(self.dataframe[CASE_CONCEPT_NAME].dtype) == "object":
             self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[CASE_CONCEPT_NAME].astype(str)
+        if not ws_constants.DEFAULT_CASE_INDEX_KEY in self.dataframe:
+            self.dataframe[ws_constants.DEFAULT_CASE_INDEX_KEY] = self.dataframe.groupby(CASE_CONCEPT_NAME).ngroup()
         if not self.is_lazy:
             self.sort_dataframe_by_case_id()
             self.build_reduced_dataframe()
@@ -151,17 +155,13 @@ class ParquetHandler(object):
             constants.PARAMETER_CONSTANT_TIMESTAMP_KEY] if constants.PARAMETER_CONSTANT_TIMESTAMP_KEY in parameters else None
         case_id_glue = parameters[
             constants.PARAMETER_CONSTANT_CASEID_KEY] if constants.PARAMETER_CONSTANT_CASEID_KEY in parameters else None
-
         recognized_format = format_recognition.get_format_from_csv(path)
-
         sep = parameters["sep"] if "sep" in parameters else recognized_format.delimiter
         quotechar = parameters["quotechar"] if "quotechar" in parameters else recognized_format.quotechar
-
         if quotechar is not None:
             self.dataframe = csv_import_adapter.import_dataframe_from_path(path, sep=sep, quotechar=quotechar)
         else:
             self.dataframe = csv_import_adapter.import_dataframe_from_path(path, sep=sep)
-
         case_id_glue1, activity_key1, timestamp_key1 = assign_column_correspondence(self.dataframe)
         if case_id_glue is None:
             case_id_glue = case_id_glue1
@@ -169,7 +169,6 @@ class ParquetHandler(object):
             activity_key = activity_key1
         if timestamp_key is None:
             timestamp_key = timestamp_key1
-
         if not activity_key == xes.DEFAULT_NAME_KEY:
             self.dataframe[xes.DEFAULT_NAME_KEY] = self.dataframe[activity_key]
         if not timestamp_key == xes.DEFAULT_TIMESTAMP_KEY:
@@ -177,10 +176,11 @@ class ParquetHandler(object):
         if not case_id_glue == CASE_CONCEPT_NAME:
             self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[case_id_glue]
         self.postloading_processing_dataframe()
-
+        self.dataframe = self.dataframe.sort_values([DEFAULT_TIMESTAMP_KEY, ws_constants.DEFAULT_EVENT_INDEX_KEY])
         if not str(self.dataframe[CASE_CONCEPT_NAME].dtype) == "object":
             self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[CASE_CONCEPT_NAME].astype(str)
-
+        if not ws_constants.DEFAULT_CASE_INDEX_KEY in self.dataframe:
+            self.dataframe[ws_constants.DEFAULT_CASE_INDEX_KEY] = self.dataframe.groupby(CASE_CONCEPT_NAME).ngroup()
         if not self.is_lazy:
             self.sort_dataframe_by_case_id()
             self.build_reduced_dataframe()
@@ -196,19 +196,22 @@ class ParquetHandler(object):
         Postloading processing of the dataframe
         """
 
-        self.activity_key = "@@classifier"
+        self.activity_key = ws_constants.DEFAULT_CLASSIFIER_KEY
         if not str(self.dataframe[xes.DEFAULT_NAME_KEY].dtype) == "object":
             self.dataframe[xes.DEFAULT_NAME_KEY] = self.dataframe[xes.DEFAULT_NAME_KEY].astype(str)
         if xes.DEFAULT_TRANSITION_KEY in self.dataframe:
             if not str(self.dataframe[xes.DEFAULT_TRANSITION_KEY].dtype) == "object":
                 self.dataframe[xes.DEFAULT_TRANSITION_KEY] = self.dataframe[xes.DEFAULT_TRANSITION_KEY].astype(str)
 
-        if not "@@classifier" in self.dataframe:
+        if not ws_constants.DEFAULT_CLASSIFIER_KEY in self.dataframe:
             if xes.DEFAULT_TRANSITION_KEY in self.dataframe:
-                self.dataframe["@@classifier"] = self.dataframe[xes.DEFAULT_NAME_KEY] + "+" + self.dataframe[
-                    xes.DEFAULT_TRANSITION_KEY]
+                self.dataframe[ws_constants.DEFAULT_CLASSIFIER_KEY] = self.dataframe[xes.DEFAULT_NAME_KEY] + "+" + \
+                                                                      self.dataframe[xes.DEFAULT_TRANSITION_KEY]
             else:
-                self.dataframe["@@classifier"] = self.dataframe[xes.DEFAULT_NAME_KEY]
+                self.dataframe[ws_constants.DEFAULT_CLASSIFIER_KEY] = self.dataframe[xes.DEFAULT_NAME_KEY]
+
+        if not ws_constants.DEFAULT_EVENT_INDEX_KEY in self.dataframe:
+            self.dataframe[ws_constants.DEFAULT_EVENT_INDEX_KEY] = self.dataframe.index
 
     def sort_dataframe_by_case_id(self):
         """
@@ -216,9 +219,10 @@ class ParquetHandler(object):
         """
         if not self.sorted_dataframe:
             if xes.DEFAULT_TIMESTAMP_KEY in self.dataframe:
-                self.dataframe = self.dataframe.sort_values([CASE_CONCEPT_NAME, xes.DEFAULT_TIMESTAMP_KEY])
+                self.dataframe = self.dataframe.sort_values(
+                    [CASE_CONCEPT_NAME, xes.DEFAULT_TIMESTAMP_KEY, ws_constants.DEFAULT_EVENT_INDEX_KEY])
             else:
-                self.dataframe = self.dataframe.sort_values(CASE_CONCEPT_NAME)
+                self.dataframe = self.dataframe.sort_values([CASE_CONCEPT_NAME, ws_constants.DEFAULT_EVENT_INDEX_KEY])
             self.sorted_dataframe = True
 
     def remove_filter(self, filter, all_filters):
@@ -684,7 +688,7 @@ class ParquetHandler(object):
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
         if self.reduced_grouped_dataframe is not None:
             parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
-        #parameters["max_ret_cases"] = ws_constants.MAX_NO_CASES_TO_RETURN
+        # parameters["max_ret_cases"] = ws_constants.MAX_NO_CASES_TO_RETURN
         parameters["sort_by_column"] = parameters[
             "sort_by_column"] if "sort_by_column" in parameters else "caseDuration"
         parameters["sort_ascending"] = parameters["sort_ascending"] if "sort_ascending" in parameters else False
@@ -698,7 +702,8 @@ class ParquetHandler(object):
             var_to_filter = var_to_filter.replace(" complete", "+complete")
             var_to_filter = var_to_filter.replace(" COMPLETE", "+COMPLETE")
 
-            filtered_dataframe = variants_filter.apply(self.get_reduced_dataframe(), [var_to_filter], parameters=parameters)
+            filtered_dataframe = variants_filter.apply(self.get_reduced_dataframe(), [var_to_filter],
+                                                       parameters=parameters)
             return casestats.include_key_in_value_list(
                 case_statistics.get_cases_description(filtered_dataframe, parameters=parameters))
         else:
@@ -859,3 +864,60 @@ class ParquetHandler(object):
             parameters[constants.GROUPED_DATAFRAME] = self.reduced_grouped_dataframe
 
         return get_align.perform_alignments(self.get_reduced_dataframe(), petri_string, parameters=parameters)
+
+    def get_events_for_dotted(self, attributes):
+        """
+        Get the events (for the dotted chart) with the corresponding list of attributes
+
+        Parameters
+        --------------
+        attributes
+            List of attributes to return
+
+        Returns
+        --------------
+        attributes
+            List of attributes
+        """
+        attributes = [ws_constants.DEFAULT_EVENT_INDEX_KEY] + attributes
+        df2 = self.dataframe[attributes].dropna()
+        uniques = {i: int(df2[attributes[i]].nunique()) for i in range(len(attributes))}
+        stream = df2.to_dict('r')
+        stream = sorted(stream, key=lambda x: (x[attributes[2]], x[attributes[1]], x[attributes[0]]))
+        third_unique_values = []
+        if len(attributes) > 3:
+            third_unique_values = list(set(s[attributes[3]] for s in stream))
+        types = {}
+        if stream:
+            for attr in attributes:
+                val = stream[0][attr]
+                types[attr] = str(type(val))
+                if type(val) is pd._libs.tslibs.timestamps.Timestamp:
+                    for ev in stream:
+                        ev[attr] = ev[attr].timestamp()
+        traces = {}
+        for attr in attributes:
+            traces[attr] = [s[attr] for s in stream]
+        return traces, types, uniques, third_unique_values, attributes
+
+    def get_spec_event_by_idx(self, ev_idx):
+        """
+        Gets a specific event by its index
+
+        Parameters
+        --------------
+        ev_idx
+            Event index
+
+        Returns
+        --------------
+        event
+            Specific event
+        """
+        event = self.dataframe[self.dataframe[ws_constants.DEFAULT_EVENT_INDEX_KEY] == ev_idx]
+        ret = event.to_dict('r')[0]
+        keys = list(ret.keys())
+        for key in keys:
+            if str(ret[key]).lower() == "nan" or str(ret[key]).lower() == "nat":
+                del ret[key]
+        return ret
