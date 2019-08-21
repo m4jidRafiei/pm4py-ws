@@ -22,6 +22,10 @@ from pm4pyws.handlers.xes.sna import get_sna as sna_obtainer
 from pm4pyws.handlers.xes.statistics import events_per_time, case_duration, numeric_attribute
 from pm4pyws.util import casestats
 
+from pm4py.objects.conversion.log import factory as log_conv_factory
+import datetime
+from pm4py.objects.log.util import sorting
+
 
 class XesHandler(object):
     def __init__(self):
@@ -51,6 +55,8 @@ class XesHandler(object):
         self.cases_number = -1
         # number of events
         self.events_number = -1
+        # events map (correspondency)
+        self.event_map = None
 
     def get_filters_chain_repr(self):
         """
@@ -77,6 +83,7 @@ class XesHandler(object):
         # self.filters_chain = ancestor.filters_chain
         self.log = ancestor.log
         self.activity_key = ancestor.activity_key
+        self.event_map = ancestor.event_map
 
     def remove_filter(self, filter, all_filters):
         """
@@ -180,10 +187,30 @@ class XesHandler(object):
         self.activity_key = xes.DEFAULT_NAME_KEY
         if classifier_key is not None:
             self.activity_key = classifier_key
+
+        # sorts the traces and the events in the log
+        self.log = sorting.sort_timestamp_log(self.log)
+
         self.build_variants()
         self.calculate_variants_number()
         self.calculate_cases_number()
         self.calculate_events_number()
+        # inserts the event and the case index attributes
+        self.insert_event_index()
+
+    def insert_event_index(self):
+        """
+        Inserts the event index on the log
+        """
+        ev_count = 0
+        ev_map = {}
+        for index, trace in enumerate(self.log):
+            for index2, event in enumerate(trace):
+                ev_map[ev_count] = (index, index2)
+                event[ws_constants.DEFAULT_CASE_INDEX_KEY] = index
+                event[ws_constants.DEFAULT_EVENT_INDEX_KEY] = ev_count
+                ev_count = ev_count + 1
+        self.event_map = ev_map
 
     def build_variants(self, parameters=None):
         """
@@ -613,8 +640,73 @@ class XesHandler(object):
 
         return dfg
 
-
     def get_trace_attributes(self):
         trace_attr = attributes_filter.get_all_trace_attributes_from_log(self.log)
 
         return trace_attr
+
+    def get_events_for_dotted(self, attributes):
+        """
+        Get the events (for the dotted chart) with the corresponding list of attributes
+
+        Parameters
+        --------------
+        attributes
+            List of attributes to return
+
+        Returns
+        --------------
+        attributes
+            List of attributes
+        """
+        attributes = [ws_constants.DEFAULT_EVENT_INDEX_KEY] + attributes
+        stream = log_conv_factory.apply(self.log, variant=log_conv_factory.TO_EVENT_STREAM)
+        stream2 = []
+        for s in stream:
+            is_ok = True
+            for attr in attributes:
+                if not attr in s:
+                    is_ok = False
+                    break
+            if is_ok:
+                stream2.append({x: y for x, y in s.items() if x in attributes})
+        stream = stream2
+        stream = sorted(stream, key=lambda x: (x[attributes[2]], x[attributes[1]], x[attributes[0]]))
+        uniques = {}
+        uniques[ws_constants.DEFAULT_EVENT_INDEX_KEY] = len(stream)
+        for index, attr in enumerate(attributes):
+            if index > 0:
+                items_list = list(set(s[attr] for s in stream))
+                uniques[attr] = len(items_list)
+        third_unique_values = []
+        if len(attributes) > 3:
+            third_unique_values = items_list
+        types = {}
+        if stream:
+            for attr in attributes:
+                val = stream[0][attr]
+                types[attr] = str(type(val))
+                if type(val) is datetime.datetime:
+                    for ev in stream:
+                        ev[attr] = ev[attr].timestamp()
+        traces = {}
+        for attr in attributes:
+            traces[attr] = [s[attr] for s in stream]
+        return traces, types, uniques, third_unique_values, attributes
+
+    def get_spec_event_by_idx(self, ev_idx):
+        """
+        Gets a specific event by its index
+
+        Parameters
+        --------------
+        ev_idx
+            Event index
+
+        Returns
+        --------------
+        event
+            Specific event
+        """
+        ev_idxs = self.event_map[ev_idx]
+        return dict(self.log[ev_idxs[0]][ev_idxs[1]])
