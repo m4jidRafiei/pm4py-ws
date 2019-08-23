@@ -122,15 +122,16 @@ class ParquetHandler(object):
         self.dataframe[DEFAULT_TIMESTAMP_KEY] = pd.to_datetime(self.dataframe[DEFAULT_TIMESTAMP_KEY], utc=True)
         self.postloading_processing_dataframe()
         self.dataframe = self.dataframe.sort_values([DEFAULT_TIMESTAMP_KEY, ws_constants.DEFAULT_EVENT_INDEX_KEY])
+        self.dataframe = self.dataframe.reset_index(drop=True)
         if not str(self.dataframe[CASE_CONCEPT_NAME].dtype) == "object":
             self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[CASE_CONCEPT_NAME].astype(str)
+        self.build_grouped_dataframe()
         if not ws_constants.DEFAULT_CASE_INDEX_KEY in self.dataframe:
-            self.dataframe[ws_constants.DEFAULT_CASE_INDEX_KEY] = self.dataframe.groupby(CASE_CONCEPT_NAME).ngroup()
+            self.dataframe[ws_constants.DEFAULT_CASE_INDEX_KEY] = self.grouped_dataframe.ngroup()
         if not self.is_lazy:
             self.sort_dataframe_by_case_id()
             self.build_reduced_dataframe()
             self.build_variants_df()
-            self.build_grouped_dataframe()
             self.build_reduced_grouped_dataframe()
             self.calculate_events_number()
             self.calculate_variants_number()
@@ -177,15 +178,16 @@ class ParquetHandler(object):
             self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[case_id_glue]
         self.postloading_processing_dataframe()
         self.dataframe = self.dataframe.sort_values([DEFAULT_TIMESTAMP_KEY, ws_constants.DEFAULT_EVENT_INDEX_KEY])
+        self.dataframe = self.dataframe.reset_index(drop=True)
         if not str(self.dataframe[CASE_CONCEPT_NAME].dtype) == "object":
             self.dataframe[CASE_CONCEPT_NAME] = self.dataframe[CASE_CONCEPT_NAME].astype(str)
+        self.build_grouped_dataframe()
         if not ws_constants.DEFAULT_CASE_INDEX_KEY in self.dataframe:
-            self.dataframe[ws_constants.DEFAULT_CASE_INDEX_KEY] = self.dataframe.groupby(CASE_CONCEPT_NAME).ngroup()
+            self.dataframe[ws_constants.DEFAULT_CASE_INDEX_KEY] = self.grouped_dataframe.ngroup()
         if not self.is_lazy:
             self.sort_dataframe_by_case_id()
             self.build_reduced_dataframe()
             self.build_variants_df()
-            self.build_grouped_dataframe()
             self.build_reduced_grouped_dataframe()
             self.calculate_variants_number()
             self.calculate_cases_number()
@@ -212,6 +214,7 @@ class ParquetHandler(object):
 
         if not ws_constants.DEFAULT_EVENT_INDEX_KEY in self.dataframe:
             self.dataframe[ws_constants.DEFAULT_EVENT_INDEX_KEY] = self.dataframe.index
+            pass
 
     def sort_dataframe_by_case_id(self):
         """
@@ -372,7 +375,7 @@ class ParquetHandler(object):
         """
         Saves the grouped dataframe
         """
-        self.grouped_dataframe = self.dataframe.groupby(CASE_CONCEPT_NAME)
+        self.grouped_dataframe = self.dataframe.groupby(CASE_CONCEPT_NAME, sort=False)
 
     def get_grouped_dataframe(self):
         """
@@ -881,12 +884,11 @@ class ParquetHandler(object):
         """
         attributes = [ws_constants.DEFAULT_EVENT_INDEX_KEY] + attributes
         df2 = self.dataframe[attributes].dropna()
-        uniques = {i: int(df2[attributes[i]].nunique()) for i in range(len(attributes))}
         stream = df2.to_dict('r')
         stream = sorted(stream, key=lambda x: (x[attributes[2]], x[attributes[1]], x[attributes[0]]))
         third_unique_values = []
         if len(attributes) > 3:
-            third_unique_values = list(set(s[attributes[3]] for s in stream))
+            third_unique_values = sorted(list(set(s[attributes[3]] for s in stream)))
         types = {}
         if stream:
             for attr in attributes:
@@ -895,10 +897,19 @@ class ParquetHandler(object):
                 if type(val) is pd._libs.tslibs.timestamps.Timestamp:
                     for ev in stream:
                         ev[attr] = ev[attr].timestamp()
-        traces = {}
-        for attr in attributes:
-            traces[attr] = [s[attr] for s in stream]
-        return traces, types, uniques, third_unique_values, attributes
+        traces = []
+        if third_unique_values:
+            for index, v in enumerate(third_unique_values):
+                traces.append({})
+                for index2, attr in enumerate(attributes):
+                    if index2 < len(attributes)-1:
+                        traces[-1][attr] = [s[attr] for s in stream if s[attributes[3]] == v]
+        else:
+            third_unique_values.append("UNIQUE")
+            traces.append({})
+            for index2, attr in enumerate(attributes):
+                traces[-1][attr] = [s[attr] for s in stream]
+        return traces, types, attributes, third_unique_values
 
     def get_spec_event_by_idx(self, ev_idx):
         """
