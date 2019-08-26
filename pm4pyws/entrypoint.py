@@ -532,18 +532,19 @@ def get_events_per_dotted():
 
     dictio = {}
 
-    if check_session_validity(session):
-        user = get_user_from_session(session)
-        if lh.check_user_log_visibility(user, process):
-            traces, types, attributes, third_unique_values = lh.get_handler_for_process_and_session(process,
-                                                                                                 session).get_events_for_dotted(
-                attributes)
-            dictio = {"traces": traces, "types": types, "attributes": attributes,
-                      "third_unique_values": third_unique_values}
+    if Configuration.overall_enable_dotted_chart:
+        if check_session_validity(session):
+            user = get_user_from_session(session)
+            if lh.check_user_log_visibility(user, process):
+                traces, types, attributes, third_unique_values = lh.get_handler_for_process_and_session(process,
+                                                                                                     session).get_events_for_dotted(
+                    attributes)
+                dictio = {"traces": traces, "types": types, "attributes": attributes,
+                          "third_unique_values": third_unique_values}
 
-        logging.info(
-            "get_events_per_dotted complete session=" + str(session) + " process=" + str(process) + " user=" + str(
-                user))
+            logging.info(
+                "get_events_per_dotted complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
 
     ret = jsonify(dictio)
     return ret
@@ -568,15 +569,16 @@ def get_spec_event_by_idx():
 
     dictio = {}
 
-    if check_session_validity(session):
-        user = get_user_from_session(session)
-        if lh.check_user_log_visibility(user, process):
-            event = lh.get_handler_for_process_and_session(process, session).get_spec_event_by_idx(index)
-            dictio = {"event": event}
+    if Configuration.overall_enable_dotted_chart:
+        if check_session_validity(session):
+            user = get_user_from_session(session)
+            if lh.check_user_log_visibility(user, process):
+                event = lh.get_handler_for_process_and_session(process, session).get_spec_event_by_idx(index)
+                dictio = {"event": event}
 
-        logging.info(
-            "get_spec_event_by_idx complete session=" + str(session) + " process=" + str(process) + " user=" + str(
-                user))
+            logging.info(
+                "get_spec_event_by_idx complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
 
     ret = jsonify(dictio)
     return ret
