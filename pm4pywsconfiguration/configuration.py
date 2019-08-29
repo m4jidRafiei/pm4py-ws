@@ -23,3 +23,4 @@ overall_enable_transient = False
 overall_enable_sna = True
 overall_enable_sharing = True
 overall_enable_deletion = True
+overall_enable_dotted_chart = True
