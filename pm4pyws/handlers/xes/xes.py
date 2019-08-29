@@ -680,7 +680,7 @@ class XesHandler(object):
                 uniques[attr] = len(items_list)
         third_unique_values = []
         if len(attributes) > 3:
-            third_unique_values = items_list
+            third_unique_values = sorted(list(set(s[attributes[3]] for s in stream)))
         types = {}
         if stream:
             for attr in attributes:
@@ -689,10 +689,19 @@ class XesHandler(object):
                 if type(val) is datetime.datetime:
                     for ev in stream:
                         ev[attr] = ev[attr].timestamp()
-        traces = {}
-        for attr in attributes:
-            traces[attr] = [s[attr] for s in stream]
-        return traces, types, uniques, third_unique_values, attributes
+        traces = []
+        if third_unique_values:
+            for index, v in enumerate(third_unique_values):
+                traces.append({})
+                for index2, attr in enumerate(attributes):
+                    if index2 < len(attributes)-1:
+                        traces[-1][attr] = [s[attr] for s in stream if s[attributes[3]] == v]
+        else:
+            third_unique_values.append("UNIQUE")
+            traces.append({})
+            for index2, attr in enumerate(attributes):
+                traces[-1][attr] = [s[attr] for s in stream]
+        return traces, types, attributes, third_unique_values
 
     def get_spec_event_by_idx(self, ev_idx):
         """
