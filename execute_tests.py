@@ -9,6 +9,7 @@ if __name__ == "__main__":
     sys.path.insert(0, parent_dir)
 
     from tests.test_parquet_handler import ParquetTests
+    from tests.test_parquet_handler_lazy import ParquetTestsLazy
     from tests.test_log_handler import XesTests
     from tests.test_session import SessionTest
     from tests.test_log_manager import TestLogManager
@@ -16,6 +17,7 @@ if __name__ == "__main__":
     from tests.test_csv_handler import CsvTests
 
     tp = ParquetTests()
+    tpl = ParquetTestsLazy()
     tx = XesTests()
     st = SessionTest()
     lmt = TestLogManager()

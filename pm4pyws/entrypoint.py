@@ -289,10 +289,16 @@ def get_case_duration():
             try:
                 base64, gviz_base64, ret = lh.get_handler_for_process_and_session(process,
                                                                                   session).get_case_duration_svg()
-                dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz_base64.decode('utf-8'), "points": ret}
+                data_x = []
+                data_y = []
+                for i in range(len(ret)):
+                    data_x.append(ret[i][0])
+                    data_y.append(ret[i][1])
+
+                dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz_base64.decode('utf-8'), "points": ret,"points_x":data_x, "points_y":data_y}
             except:
                 logging.error(traceback.format_exc())
-                dictio = {"base64": "", "gviz_base64": "", "points": []}
+                dictio = {"base64": "", "gviz_base64": "", "points": [],"points_x":[],"points_y":[]}
             Commons.semaphore_matplot.release()
 
         logging.info(
@@ -331,10 +337,16 @@ def get_events_per_time():
             try:
                 base64, gviz_base64, ret = lh.get_handler_for_process_and_session(process,
                                                                                   session).get_events_per_time_svg()
-                dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz_base64.decode('utf-8'), "points": ret}
+                data_x = []
+                data_y = []
+                for i in range(len(ret)):
+                    data_x.append(ret[i][0])
+                    data_y.append(ret[i][1])
+
+                dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz_base64.decode('utf-8'), "points": ret,"points_x":data_x, "points_y":data_y}
             except:
                 logging.error(traceback.format_exc())
-                dictio = {"base64": "", "gviz_base64": "", "points": []}
+                dictio = {"base64": "", "gviz_base64": "", "points": [],"points_x":[],"points_y":[]}
             Commons.semaphore_matplot.release()
 
         logging.info(
@@ -532,18 +544,19 @@ def get_events_per_dotted():
 
     dictio = {}
 
-    if check_session_validity(session):
-        user = get_user_from_session(session)
-        if lh.check_user_log_visibility(user, process):
-            traces, types, uniques, third_unique_values, attributes = lh.get_handler_for_process_and_session(process,
-                                                                                                 session).get_events_for_dotted(
-                attributes)
-            dictio = {"traces": traces, "types": types, "uniques": uniques, "attributes": attributes,
-                      "third_unique_values": third_unique_values}
+    if Configuration.overall_enable_dotted_chart:
+        if check_session_validity(session):
+            user = get_user_from_session(session)
+            if lh.check_user_log_visibility(user, process):
+                traces, types, attributes, third_unique_values = lh.get_handler_for_process_and_session(process,
+                                                                                                     session).get_events_for_dotted(
+                    attributes)
+                dictio = {"traces": traces, "types": types, "attributes": attributes,
+                          "third_unique_values": third_unique_values}
 
-        logging.info(
-            "get_events_per_dotted complete session=" + str(session) + " process=" + str(process) + " user=" + str(
-                user))
+            logging.info(
+                "get_events_per_dotted complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
 
     ret = jsonify(dictio)
     return ret
@@ -568,15 +581,16 @@ def get_spec_event_by_idx():
 
     dictio = {}
 
-    if check_session_validity(session):
-        user = get_user_from_session(session)
-        if lh.check_user_log_visibility(user, process):
-            event = lh.get_handler_for_process_and_session(process, session).get_spec_event_by_idx(index)
-            dictio = {"event": event}
+    if Configuration.overall_enable_dotted_chart:
+        if check_session_validity(session):
+            user = get_user_from_session(session)
+            if lh.check_user_log_visibility(user, process):
+                event = lh.get_handler_for_process_and_session(process, session).get_spec_event_by_idx(index)
+                dictio = {"event": event}
 
-        logging.info(
-            "get_spec_event_by_idx complete session=" + str(session) + " process=" + str(process) + " user=" + str(
-                user))
+            logging.info(
+                "get_spec_event_by_idx complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
 
     ret = jsonify(dictio)
     return ret
