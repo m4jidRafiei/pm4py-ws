@@ -289,10 +289,16 @@ def get_case_duration():
             try:
                 base64, gviz_base64, ret = lh.get_handler_for_process_and_session(process,
                                                                                   session).get_case_duration_svg()
-                dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz_base64.decode('utf-8'), "points": ret}
+                data_x = []
+                data_y = []
+                for i in range(len(ret)):
+                    data_x.append(ret[i][0])
+                    data_y.append(ret[i][1])
+
+                dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz_base64.decode('utf-8'), "points": ret,"points_x":data_x, "points_y":data_y}
             except:
                 logging.error(traceback.format_exc())
-                dictio = {"base64": "", "gviz_base64": "", "points": []}
+                dictio = {"base64": "", "gviz_base64": "", "points": [],"points_x":[],"points_y":[]}
             Commons.semaphore_matplot.release()
 
         logging.info(
@@ -331,10 +337,16 @@ def get_events_per_time():
             try:
                 base64, gviz_base64, ret = lh.get_handler_for_process_and_session(process,
                                                                                   session).get_events_per_time_svg()
-                dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz_base64.decode('utf-8'), "points": ret}
+                data_x = []
+                data_y = []
+                for i in range(len(ret)):
+                    data_x.append(ret[i][0])
+                    data_y.append(ret[i][1])
+
+                dictio = {"base64": base64.decode('utf-8'), "gviz_base64": gviz_base64.decode('utf-8'), "points": ret,"points_x":data_x, "points_y":data_y}
             except:
                 logging.error(traceback.format_exc())
-                dictio = {"base64": "", "gviz_base64": "", "points": []}
+                dictio = {"base64": "", "gviz_base64": "", "points": [],"points_x":[],"points_y":[]}
             Commons.semaphore_matplot.release()
 
         logging.info(
