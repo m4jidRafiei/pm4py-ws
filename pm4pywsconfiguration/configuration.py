@@ -1,3 +1,6 @@
+default_pm4pydistr_master_host = "127.0.0.1"
+default_pm4pydistr_master_port = "5001"
+default_pm4pydistr_keyphrase = "hello"
 enable_upload = False
 enable_download = False
 enable_load_local_path = False

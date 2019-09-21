@@ -123,6 +123,9 @@ class PM4PyServices:
         """
         lh.load_log_static(log_name, file_path, parameters=parameters)
 
+    def add_handler(self, log_name, handler, parameters=None):
+        lh.handlers[log_name] = handler
+
     def serve(self, host="0.0.0.0", port="5000", threaded=True, ssl_context=None):
         clean_expired_sessions()
         if ssl_context is None:
