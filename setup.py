@@ -51,7 +51,8 @@ setup(
         'pm4py',
         'Flask',
         'flask-cors',
-        'setuptools'
+        'setuptools',
+        'pm4pyamazon'
     ],
     project_urls={
         'Documentation': 'http://pm4py.pads.rwth-aachen.de/documentation/',

@@ -10,11 +10,14 @@ import time
 
 def singleton(class_):
     instances = {}
+
     def getinstance(*args, **kwargs):
         if class_ not in instances:
             instances[class_] = class_(*args, **kwargs)
         return instances[class_]
+
     return getinstance
+
 
 @singleton
 class BasicLogSessionHandler(LogHandler):
@@ -265,7 +268,7 @@ class BasicLogSessionHandler(LogHandler):
             Possible parameters
         """
         if log_name not in self.handlers:
-            if file_path.endswith(".parquet"):
+            if file_path.endswith(".parquet") or file_path.startswith("s3dir:///"):
                 self.handlers[log_name] = ParquetHandler()
                 self.handlers[log_name].build_from_path(file_path, parameters=parameters)
             elif file_path.endswith(".csv"):
@@ -380,7 +383,7 @@ class BasicLogSessionHandler(LogHandler):
         return sorted_users, sorted_logs, user_log_vis
 
     def add_user_eventlog_visibility(self, user, event_log):
-        print("start add_user_eventlog_visibility "+str(user)+" "+str(event_log))
+        print("start add_user_eventlog_visibility " + str(user) + " " + str(event_log))
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
@@ -390,11 +393,10 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs.commit()
         conn_logs.close()
 
-        print("end add_user_eventlog_visibility "+str(user)+" "+str(event_log))
-
+        print("end add_user_eventlog_visibility " + str(user) + " " + str(event_log))
 
     def remove_user_eventlog_visibility(self, user, event_log):
-        print("start remove_user_eventlog_visibility "+str(user)+" "+str(event_log))
+        print("start remove_user_eventlog_visibility " + str(user) + " " + str(event_log))
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
@@ -402,10 +404,10 @@ class BasicLogSessionHandler(LogHandler):
 
         conn_logs.commit()
         conn_logs.close()
-        print("end remove_user_eventlog_visibility "+str(user)+" "+str(event_log))
+        print("end remove_user_eventlog_visibility " + str(user) + " " + str(event_log))
 
     def add_user_eventlog_downloadable(self, user, event_log):
-        print("start add_user_eventlog_downloadable "+str(user)+" "+str(event_log))
+        print("start add_user_eventlog_downloadable " + str(user) + " " + str(event_log))
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
@@ -415,10 +417,10 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs.commit()
         conn_logs.close()
 
-        print("end add_user_eventlog_downloadable "+str(user)+" "+str(event_log))
+        print("end add_user_eventlog_downloadable " + str(user) + " " + str(event_log))
 
     def remove_user_eventlog_downloadable(self, user, event_log):
-        print("start remove_user_eventlog_downloadable "+str(user)+" "+str(event_log))
+        print("start remove_user_eventlog_downloadable " + str(user) + " " + str(event_log))
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
@@ -427,10 +429,10 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs.commit()
         conn_logs.close()
 
-        print("end remove_user_eventlog_downloadable "+str(user)+" "+str(event_log))
+        print("end remove_user_eventlog_downloadable " + str(user) + " " + str(event_log))
 
     def add_user_eventlog_removable(self, user, event_log):
-        print("start add_user_eventlog_removable "+str(user)+" "+str(event_log))
+        print("start add_user_eventlog_removable " + str(user) + " " + str(event_log))
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
@@ -440,10 +442,10 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs.commit()
         conn_logs.close()
 
-        print("end add_user_eventlog_removable "+str(user)+" "+str(event_log))
+        print("end add_user_eventlog_removable " + str(user) + " " + str(event_log))
 
     def remove_user_eventlog_removable(self, user, event_log):
-        print("start remove_user_eventlog_removable "+str(user)+" "+str(event_log))
+        print("start remove_user_eventlog_removable " + str(user) + " " + str(event_log))
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
@@ -452,14 +454,15 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs.commit()
         conn_logs.close()
 
-        print("end remove_user_eventlog_removable "+str(user)+" "+str(event_log))
+        print("end remove_user_eventlog_removable " + str(user) + " " + str(event_log))
 
     def check_log_is_removable(self, log):
         res = False
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
-        curs_logs.execute("SELECT * FROM EVENT_LOGS WHERE LOG_NAME = ? AND LOG_NAME = ? AND CAN_REMOVED = 1",(log, log))
+        curs_logs.execute("SELECT * FROM EVENT_LOGS WHERE LOG_NAME = ? AND LOG_NAME = ? AND CAN_REMOVED = 1",
+                          (log, log))
 
         cur = curs_logs.fetchall()
 
@@ -505,10 +508,10 @@ class BasicLogSessionHandler(LogHandler):
         conn_logs = sqlite3.connect(self.database_path)
         curs_logs = conn_logs.cursor()
 
-        curs_logs.execute("DELETE FROM EVENT_LOGS WHERE LOG_NAME = ? AND LOG_NAME = ?", (log,log))
-        curs_logs.execute("DELETE FROM USER_LOG_VISIBILITY WHERE LOG_NAME = ? AND LOG_NAME = ?", (log,log))
-        curs_logs.execute("DELETE FROM USER_LOG_REMOVAL WHERE LOG_NAME = ? AND LOG_NAME = ?", (log,log))
-        curs_logs.execute("DELETE FROM USER_LOG_DOWNLOADABLE WHERE LOG_NAME = ? AND LOG_NAME = ?", (log,log))
+        curs_logs.execute("DELETE FROM EVENT_LOGS WHERE LOG_NAME = ? AND LOG_NAME = ?", (log, log))
+        curs_logs.execute("DELETE FROM USER_LOG_VISIBILITY WHERE LOG_NAME = ? AND LOG_NAME = ?", (log, log))
+        curs_logs.execute("DELETE FROM USER_LOG_REMOVAL WHERE LOG_NAME = ? AND LOG_NAME = ?", (log, log))
+        curs_logs.execute("DELETE FROM USER_LOG_DOWNLOADABLE WHERE LOG_NAME = ? AND LOG_NAME = ?", (log, log))
 
         conn_logs.commit()
         conn_logs.close()
@@ -517,4 +520,3 @@ class BasicLogSessionHandler(LogHandler):
         for session in self.session_handlers:
             if log in self.session_handlers[session]:
                 del self.session_handlers[session][log]
-

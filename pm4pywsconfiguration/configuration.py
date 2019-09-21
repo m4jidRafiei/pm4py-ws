@@ -1,3 +1,4 @@
+amazon_bucket = 'elasticbeanstalk-us-east-2-809900290383'
 enable_upload = False
 enable_download = False
 enable_load_local_path = False
