@@ -12,7 +12,7 @@ COPY ./docker-sec-confs/nginx.conf /etc/nginx/nginx.conf
 #COPY ./docker-sec-confs/nginx_ssl.conf /etc/nginx/conf.d/nginx_ssl.conf
 COPY ./docker-sec-confs/jail.local /etc/fail2ban/jail.local
 
-RUN pip install --no-cache-dir -U pm4py==1.1.26 Flask flask-cors setuptools pm4pydistr
+RUN pip install --no-cache-dir -U pm4py==1.1.26 Flask flask-cors setuptools pm4pydistr==0.1.4
 RUN pip install --no-cache-dir -U pm4pycvxopt
 #RUN pip install --no-cache-dir -U pm4pybpmn
 COPY . /app
@@ -20,7 +20,7 @@ COPY . /app
 RUN echo "enable_session = True" >> /app/pm4pywsconfiguration/configuration.py
 RUN echo "static_folder = '/app/webapp2/dist'" >> /app/pm4pywsconfiguration/configuration.py
 RUN echo "ssl_context_directory = '/app/ssl_cert_gen'" >> /app/pm4pywsconfiguration/configuration.py
-RUN echo "log_manager_default_variant = 'multinode_file_based'" >> /app/pm4pywsconfiguration/configuration.py
+#RUN echo "log_manager_default_variant = 'multinode_file_based'" >> /app/pm4pywsconfiguration/configuration.py
 #RUN pip install --no-cache-dir -U pyOpenSSL
 #RUN cd /app/ssl_cert_gen && python create.py
 
