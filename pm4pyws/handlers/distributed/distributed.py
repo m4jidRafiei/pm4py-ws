@@ -1,5 +1,8 @@
 from pm4py.objects.log.util import xes
 from pm4pyws.handlers.distributed.process_schema import factory as process_schema_factory
+from pm4py.util import constants
+from copy import deepcopy
+
 
 class DistributedHandler(object):
     def __init__(self, wrapper, parameters=None):
@@ -25,12 +28,15 @@ class DistributedHandler(object):
         return str(self.filters_chain)
 
     def remove_filter(self, filter, all_filters):
-        raise Exception("not implemented")
+        self.wrapper.set_filters(all_filters)
+        return self
 
     def add_filter(self, filter, all_filters):
-        raise Exception("not implemented")
+        self.wrapper.set_filters(all_filters)
+        return self
 
     def get_variants_number(self):
+        # the number is not implemented
         return -1
 
     def get_cases_number(self):
@@ -54,7 +60,9 @@ class DistributedHandler(object):
         pass
 
     def get_variant_statistics(self, parameters=None):
-        pass
+        dictio = self.wrapper.get_variants()
+
+        return [dictio["variants"], {"this_events_number": dictio["events"], "this_cases_number": dictio["cases"], "this_variants_number": -1, "ancestor_events_number": dictio["events"], "ancestor_cases_number": dictio["cases"], "ancestor_variants_number": -1}]
 
     def get_sna(self, variant="handover", parameters=None):
         pass
@@ -63,10 +71,29 @@ class DistributedHandler(object):
         pass
 
     def get_case_statistics(self, parameters=None):
-        pass
+        if parameters is None:
+            parameters = {}
+
+        if "variant" in parameters:
+            var_to_filter = parameters["variant"]
+            # TODO: TECHNICAL DEBT
+            # quick turnaround for bug
+            var_to_filter = var_to_filter.replace(" start", "+start")
+            var_to_filter = var_to_filter.replace(" START", "+START")
+            var_to_filter = var_to_filter.replace(" complete", "+complete")
+            var_to_filter = var_to_filter.replace(" COMPLETE", "+COMPLETE")
+
+            old_filters = deepcopy(self.wrapper.filters)
+            self.wrapper.set_filters(old_filters + [["variants", [var_to_filter]]])
+            dictio = self.wrapper.get_cases()
+            self.wrapper.set_filters(old_filters)
+        else:
+            dictio = self.wrapper.get_cases()
+
+        return [dictio["cases_list"], {"this_events_number": dictio["events"], "this_cases_number": dictio["cases"], "this_variants_number": -1, "ancestor_events_number": dictio["events"], "ancestor_cases_number": dictio["cases"], "ancestor_variants_number": -1}]
 
     def get_events(self, caseid, parameters=None):
-        pass
+        return self.wrapper.get_events(caseid)
 
     def download_xes_log(self):
         pass
@@ -75,19 +102,19 @@ class DistributedHandler(object):
         pass
 
     def get_start_activities(self, parameters=None):
-        pass
+        return self.wrapper.get_start_activities()
 
     def get_end_activities(self, parameters=None):
-        pass
+        return self.wrapper.get_end_activities()
 
     def get_attributes_list(self, parameters=None):
-        pass
+        return self.wrapper.get_attribute_names()
 
     def get_attribute_values(self, attribute_key, parameters=None):
-        pass
+        return self.wrapper.get_attribute_values(attribute_key)
 
     def get_paths(self, attribute_key, parameters=None):
-        pass
+        return self.wrapper.calculate_dfg(parameters={constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY: attribute_key})
 
     def get_alignments(self, petri_string, parameters=None):
         pass
@@ -97,3 +124,18 @@ class DistributedHandler(object):
 
     def get_spec_event_by_idx(self, ev_idx):
         pass
+
+    def get_log_summary_dictio(self):
+        summary = self.wrapper.get_log_summary()
+        this_variants_number = -1
+        this_cases_number = summary["cases"]
+        this_events_number = summary["events"]
+        ancestor_variants_number = -1
+        ancestor_cases_number = summary["cases"]
+        ancestor_events_number = summary["events"]
+
+        dictio = {"this_variants_number": this_variants_number, "this_cases_number": this_cases_number,
+                  "this_events_number": this_events_number, "ancestor_variants_number": ancestor_variants_number,
+                  "ancestor_cases_number": ancestor_cases_number, "ancestor_events_number": ancestor_events_number}
+
+        return dictio
