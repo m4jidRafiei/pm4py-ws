@@ -332,7 +332,7 @@ class XesHandler(object):
         parameters[constants.PARAMETER_CONSTANT_ATTRIBUTE_KEY] = self.activity_key
         parameters[ws_constants.PARAM_MOST_COMMON_VARIANT] = self.most_common_variant
         parameters[ws_constants.PARAM_MOST_COMMON_PATHS] = self.most_common_paths
-        return process_schema_factory.apply(self.log, variant=variant, parameters=parameters)
+        return list(process_schema_factory.apply(self.log, variant=variant, parameters=parameters)) + [self.get_log_summary_dictio()]
 
     def get_numeric_attribute_svg(self, attribute, parameters=None):
         """
@@ -417,7 +417,7 @@ class XesHandler(object):
         variants_stats = variants.get_statistics(self.log, parameters=parameters)
         variants_stats = variants_stats[0:min(len(variants_stats), max_no_variants)]
 
-        return variants_stats
+        return [variants_stats] + [self.get_log_summary_dictio()]
 
 
     def get_sna(self, variant="handover", parameters=None):
@@ -495,11 +495,11 @@ class XesHandler(object):
             var_to_filter = var_to_filter.replace(" complete", "+complete")
             var_to_filter = var_to_filter.replace(" COMPLETE", "+COMPLETE")
             filtered_log = variants_filter.apply(self.log, [var_to_filter], parameters=parameters)
-            return casestats.include_key_in_value_list(
-                case_statistics.get_cases_description(filtered_log, parameters=parameters))
+            return [casestats.include_key_in_value_list(
+                case_statistics.get_cases_description(filtered_log, parameters=parameters))] + [self.get_log_summary_dictio()]
         else:
-            return casestats.include_key_in_value_list(
-                case_statistics.get_cases_description(self.log, parameters=parameters))
+            return [casestats.include_key_in_value_list(
+                case_statistics.get_cases_description(self.log, parameters=parameters))] + [self.get_log_summary_dictio()]
 
     def get_events(self, caseid, parameters=None):
         """
@@ -715,3 +715,16 @@ class XesHandler(object):
         ev_idxs = self.event_map[ev_idx]
         return dict(self.log[ev_idxs[0]][ev_idxs[1]])
 
+    def get_log_summary_dictio(self):
+        this_variants_number = self.get_variants_number()
+        this_cases_number = self.get_cases_number()
+        this_events_number = self.get_events_number()
+        ancestor_variants_number = self.first_ancestor.get_variants_number()
+        ancestor_cases_number = self.first_ancestor.get_cases_number()
+        ancestor_events_number = self.first_ancestor.get_events_number()
+
+        dictio = {"this_variants_number": this_variants_number, "this_cases_number": this_cases_number,
+                  "this_events_number": this_events_number, "ancestor_variants_number": ancestor_variants_number,
+                  "ancestor_cases_number": ancestor_cases_number, "ancestor_events_number": ancestor_events_number}
+
+        return dictio
