@@ -1,5 +1,6 @@
 from pm4py.objects.log.util import xes
 from pm4pyws.handlers.distributed.process_schema import factory as process_schema_factory
+from pm4pyws.handlers.distributed.statistics import case_duration, events_per_time, numeric_attribute
 from pm4py.util import constants
 from copy import deepcopy
 
@@ -51,13 +52,13 @@ class DistributedHandler(object):
         return process_schema_factory.apply(self.wrapper, variant=variant, parameters=parameters)
 
     def get_numeric_attribute_svg(self, attribute, parameters=None):
-        pass
+        return numeric_attribute.get_numeric_attribute_distr_svg(self.wrapper, attribute, parameters=parameters)
 
     def get_case_duration_svg(self, parameters=None):
-        pass
+        return case_duration.get_case_duration_svg(self.wrapper, parameters=parameters)
 
     def get_events_per_time_svg(self, parameters=None):
-        pass
+        return events_per_time.get_events_per_time_svg(self.wrapper, parameters=parameters)
 
     def get_variant_statistics(self, parameters=None):
         dictio = self.wrapper.get_variants()
@@ -120,7 +121,12 @@ class DistributedHandler(object):
         pass
 
     def get_events_for_dotted(self, attributes):
-        pass
+        if len(attributes) > 2:
+            dictio = self.wrapper.get_events_per_dotted(attributes[0], attributes[1], attributes[2])
+        else:
+            dictio = self.wrapper.get_events_per_dotted(attributes[0], attributes[1])
+
+        return dictio["traces"], dictio["types"], dictio["attributes"], dictio["third_unique_values"]
 
     def get_spec_event_by_idx(self, ev_idx):
         pass
