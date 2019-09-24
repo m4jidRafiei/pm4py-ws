@@ -551,7 +551,7 @@ class ParquetHandler(object):
         if self.variants_df is not None:
             parameters["variants_df"] = self.variants_df
 
-        return process_schema_factory.apply(self.get_reduced_dataframe(), variant=variant, parameters=parameters)
+        return list(process_schema_factory.apply(self.get_reduced_dataframe(), variant=variant, parameters=parameters)) + [self.get_log_summary_dictio()]
 
     def get_numeric_attribute_svg(self, attribute, parameters=None):
         """
@@ -646,7 +646,7 @@ class ParquetHandler(object):
         variants_stats = variants.get_statistics(self.get_reduced_dataframe(), parameters=parameters)
         variants_stats = variants_stats[0:min(len(variants_stats), max_no_variants)]
 
-        return variants_stats
+        return [variants_stats] + [self.get_log_summary_dictio()]
 
     def get_sna(self, variant="handover", parameters=None):
         """
@@ -734,11 +734,11 @@ class ParquetHandler(object):
 
             filtered_dataframe = variants_filter.apply(self.get_reduced_dataframe(), [var_to_filter],
                                                        parameters=parameters)
-            return casestats.include_key_in_value_list(
-                case_statistics.get_cases_description(filtered_dataframe, parameters=parameters))
+            return [casestats.include_key_in_value_list(
+                case_statistics.get_cases_description(filtered_dataframe, parameters=parameters))] + [self.get_log_summary_dictio()]
         else:
-            return casestats.include_key_in_value_list(
-                case_statistics.get_cases_description(self.get_reduced_dataframe(), parameters=parameters))
+            return [casestats.include_key_in_value_list(
+                case_statistics.get_cases_description(self.get_reduced_dataframe(), parameters=parameters))] + [self.get_log_summary_dictio()]
 
     def get_events(self, caseid, parameters=None):
         """
@@ -972,3 +972,17 @@ class ParquetHandler(object):
             if str(ret[key]).lower() == "nan" or str(ret[key]).lower() == "nat":
                 del ret[key]
         return ret
+
+    def get_log_summary_dictio(self):
+        this_variants_number = self.get_variants_number()
+        this_cases_number = self.get_cases_number()
+        this_events_number = self.get_events_number()
+        ancestor_variants_number = self.first_ancestor.get_variants_number()
+        ancestor_cases_number = self.first_ancestor.get_cases_number()
+        ancestor_events_number = self.first_ancestor.get_events_number()
+
+        dictio = {"this_variants_number": this_variants_number, "this_cases_number": this_cases_number,
+                  "this_events_number": this_events_number, "ancestor_variants_number": ancestor_variants_number,
+                  "ancestor_cases_number": ancestor_cases_number, "ancestor_events_number": ancestor_events_number}
+
+        return dictio
