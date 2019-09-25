@@ -32,6 +32,7 @@ wrapper = rw_factory.apply(pm4pydistr_master_host, pm4pydistr_master_port, pm4py
 list_logs = wrapper.get_logs_list()
 for log in list_logs:
     wrapper = rw_factory.apply(pm4pydistr_master_host, pm4pydistr_master_port, pm4pydistr_keyphrase, log)
+    wrapper.do_caching()
     handler = DistributedHandler(wrapper)
     S.add_handler(log+"(distributed)", handler)
 

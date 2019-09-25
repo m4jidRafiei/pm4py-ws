@@ -1503,6 +1503,7 @@ def check_versions():
 
     import pm4pyws
     import pm4py
+    import pm4pydistr
 
     try:
         import pm4pybpmn
@@ -1510,8 +1511,8 @@ def check_versions():
         logging.info("check_versions complete")
 
         return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__),
-                "pm4pybpmn": str(pm4pybpmn.__version__), "hostname": str(socket.gethostname())}
+                "pm4pybpmn": str(pm4pybpmn.__version__), "hostname": str(socket.gethostname()), "pm4pydistr": str(pm4pydistr.__version__)}
 
     except:
         return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__),
-                "hostname": str(socket.gethostname())}
+                "hostname": str(socket.gethostname()), "pm4pydistr": str(pm4pydistr.__version__)}
