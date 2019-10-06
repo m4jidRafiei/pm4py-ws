@@ -2,7 +2,7 @@ try:
     import pm4pycvxopt
 except:
     pass
-
+from time import sleep
 
 from pm4pyws.entrypoint import PM4PyServices
 from pm4pywsconfiguration import configuration as Configuration
@@ -20,6 +20,8 @@ app = PM4PyServices.app
 #    S.load_log(str(result[0]), str(result[1]))
 #conn_event_logs.close()
 
+print("sleeping")
+sleep(10)
 
 S = PM4PyServices()
 pm4pydistr_master_host = os.environ["pm4pydistr--master-host"] if "pm4pydistr--master-host" in os.environ else Configuration.default_pm4pydistr_master_host
