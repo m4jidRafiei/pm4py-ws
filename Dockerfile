@@ -4,7 +4,7 @@ RUN apt-get update
 RUN apt-get -y upgrade
 RUN apt-get -y install nano vim git python3-pydot python-pydot python-pydot-ng graphviz python3-tk zip unzip curl ftp fail2ban python3-openssl
 
-RUN pip install --no-cache-dir -U pm4py==1.2.0 Flask flask-cors setuptools pm4pydistr==0.1.9
+RUN pip install --no-cache-dir -U pm4py==1.2.0 Flask flask-cors setuptools pm4pydistr==0.1.10
 RUN pip install --no-cache-dir -U pm4pycvxopt
 #RUN pip install --no-cache-dir -U pm4pybpmn
 COPY . /

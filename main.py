@@ -24,9 +24,9 @@ print("sleeping")
 sleep(10)
 
 S = PM4PyServices()
-pm4pydistr_master_host = os.environ["pm4pydistr--master-host"] if "pm4pydistr--master-host" in os.environ else Configuration.default_pm4pydistr_master_host
-pm4pydistr_master_port = os.environ["pm4pydistr--master-port"] if "pm4pydistr--master-port" in os.environ else Configuration.default_pm4pydistr_master_port
-pm4pydistr_keyphrase = os.environ["pm4pydistr--keyphrase"] if "pm4pydistr--keyphrase" in os.environ else Configuration.default_pm4pydistr_keyphrase
+pm4pydistr_master_host = os.environ["pm4pydistrmasterhost"] if "pm4pydistrmasterhost" in os.environ else Configuration.default_pm4pydistr_master_host
+pm4pydistr_master_port = os.environ["pm4pydistrmasterport"] if "pm4pydistrmasterport" in os.environ else Configuration.default_pm4pydistr_master_port
+pm4pydistr_keyphrase = os.environ["pm4pydistrkeyphrase"] if "pm4pydistrkeyphrase" in os.environ else Configuration.default_pm4pydistr_keyphrase
 
 
 from pm4pydistr.remote_wrapper import factory as rw_factory
