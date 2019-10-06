@@ -8,7 +8,7 @@ RUN pip install --no-cache-dir -U pm4py==1.2.0 Flask flask-cors setuptools pm4py
 RUN pip install --no-cache-dir -U pm4pycvxopt
 #RUN pip install --no-cache-dir -U pm4pybpmn
 COPY . /
-RUN cd /files && python download_big_logs.py
+#RUN cd /files && python download_big_logs.py
 RUN echo "enable_session = True" >> /pm4pywsconfiguration/configuration.py
 RUN echo "static_folder = '/webapp2/dist'" >> /pm4pywsconfiguration/configuration.py
 RUN echo "ssl_context_directory = '/ssl_cert_gen'" >> /pm4pywsconfiguration/configuration.py
