@@ -1,5 +1,5 @@
 enable_upload = False
-enable_download = False
+enable_download = True
 enable_load_local_path = False
 enable_session = False
 upload_as_temporary = True
