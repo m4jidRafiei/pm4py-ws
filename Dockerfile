@@ -12,7 +12,7 @@ COPY ./docker-sec-confs/nginx.conf /etc/nginx/nginx.conf
 #COPY ./docker-sec-confs/nginx_ssl.conf /etc/nginx/conf.d/nginx_ssl.conf
 COPY ./docker-sec-confs/jail.local /etc/fail2ban/jail.local
 
-RUN pip install --no-cache-dir -U pm4py==1.1.26 Flask flask-cors setuptools
+RUN pip install --no-cache-dir -U pm4py==1.2.2 Flask flask-cors setuptools
 RUN pip install --no-cache-dir -U pm4pycvxopt
 #RUN pip install --no-cache-dir -U pm4pybpmn
 COPY . /app

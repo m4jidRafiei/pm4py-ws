@@ -196,7 +196,8 @@ def get_process_schema():
                                                     end_activities, gviz_base64, graph_rep, type_of_model, decoration,
                                                     second_model, second_format, activity_key, log_summary])
                 if model is not None:
-                    model = model.decode('utf-8')
+                    if type(model) is not str:
+                        model = model.decode('utf-8')
 
                 dictio = {"base64": base64.decode('utf-8'), "model": model, "format": format, "handler": this_handler,
                           "activities": activities,
