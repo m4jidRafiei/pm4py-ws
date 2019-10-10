@@ -32,5 +32,6 @@ RUN cd /app && git clone https://github.com/Javert899/source.git
 RUN mv /app/source /app/webapp2
 RUN cd /app/webapp2 && git checkout privacyIntegration
 RUN cd /app/webapp2 && npm install && npm install --save-dev --unsafe-perm node-sass && npm install -g @angular/core @angular/cli @angular/material
+RUN cd /app/webapp2 && ng build --prod
 
 RUN cd /app && python setup.py install

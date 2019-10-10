@@ -79,7 +79,7 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     conn_logs.commit()
     conn_logs.close()
 
-    handler = XesHandler()
-    handler.build_from_path(new_log_path)
+    #handler = XesHandler()
+    #handler.build_from_path(new_log_path)
 
-    log_manager.handlers[new_log_name] = handler
+    log_manager.logs_correspondence[new_log_name] = new_log_path

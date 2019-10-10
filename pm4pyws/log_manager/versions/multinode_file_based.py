@@ -153,6 +153,7 @@ class MultiNodeSessionHandler(LogHandler):
         handlers
             Handlers
         """
+        self.load_log_correspondence()
         return self.logs_correspondence
 
     def get_handler_for_process_and_session(self, process, session, parameters=None):
