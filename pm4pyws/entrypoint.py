@@ -736,13 +736,15 @@ def get_logs_list_advanced():
     if check_session_validity(session):
         user = get_user_from_session(session)
 
-        all_keys = lh.get_handlers().keys()
+        handlers = lh.get_handlers()
+        all_keys = handlers.keys()
 
         for key in all_keys:
             if lh.check_user_log_visibility(user, key):
                 can_download = lh.check_user_enabled_download(user, key)
                 can_delete = lh.can_delete(user, key)
-                available_keys.append({"log_name": key, "can_download": can_download, "can_delete": can_delete})
+                type = lh.get_handler_type(handlers[key])
+                available_keys.append({"log_name": key, "can_download": can_download, "can_delete": can_delete, "type": type})
 
         logging.info("get_logs_list_advanced start session=" + str(session) + " user=" + str(user))
 

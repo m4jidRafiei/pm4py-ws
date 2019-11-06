@@ -52,7 +52,8 @@ setup(
         'Flask',
         'flask-cors',
         'setuptools',
-        'pp-role-mining'
+        'pp-role-mining',
+        "p_connector_dfg"
     ],
     project_urls={
         'Documentation': 'http://pm4py.pads.rwth-aachen.de/documentation/',

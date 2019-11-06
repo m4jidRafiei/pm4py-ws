@@ -1,4 +1,4 @@
-class XesHandler(object):
+class XmlHandler(object):
     def __init__(self):
         """
         Constructor (set all variables to None)
@@ -74,7 +74,7 @@ class XesHandler(object):
     def get_events_number(self):
         raise Exception("not implemented error")
 
-    def get_schema(self, variant=process_schema_factory.DFG_FREQ, parameters=None):
+    def get_schema(self, arameters=None):
         raise Exception("not implemented error")
 
     def get_numeric_attribute_svg(self, attribute, parameters=None):
