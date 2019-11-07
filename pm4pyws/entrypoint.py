@@ -19,6 +19,7 @@ import socket
 import logging
 
 from pm4pyws.privacy.roles import apply_privacy_aware
+from pm4pyws.privacy.connector import apply_connector
 
 ex = logging_factory.apply()
 um = user_iam_factory.apply(ex)
@@ -1571,6 +1572,69 @@ def roles_privacy_aware():
             return jsonify({"status": "OK"})
 
     return jsonify({"status": "FAIL"})
+
+
+@PM4PyServices.app.route("/privacyConnectorMethod", methods=["GET"])
+def privacy_connector_method():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+    # reads the requested process name
+    process = request.args.get('process', default='receipt', type=str)
+
+    relation_depth = request.args.get('relation_depth', default="true", type=str)
+    trace_length = request.args.get('trace_length', default="true", type=str)
+    trace_id = request.args.get('trace_id', default="true", type=str)
+
+    parameters = {}
+    parameters["relation_depth"] = relation_depth
+    parameters["trace_length"] = trace_length
+    parameters["trace_id"] = trace_id
+
+    if check_session_validity(session):
+        logging.error("session " + str(session) + " is valid")
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
+
+        logging.error("this_user = " + str(this_user))
+        logging.error("is_admin = " + str(is_admin))
+
+        if is_admin:
+            apply_connector.apply(process, lh, parameters=parameters)
+
+            logging.error("is_admin")
+
+            return jsonify({"status": "OK"})
+
+    return jsonify({"status": "FAIL"})
+
+
+@PM4PyServices.app.route("/getContent", methods=["GET"])
+def get_content():
+    """
+    Gets the list of logs loaded into the system
+
+    Returns
+    -----------
+    dictio
+        JSONified dictionary that contains in the 'logs' entry the list of events logs
+    """
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+
+    process = request.args.get('process', type=str)
+
+    if check_session_validity(session):
+        user = get_user_from_session(session)
+        if lh.check_user_log_visibility(user, process):
+            ext, base64 = lh.get_handler_for_process_and_session(process, session).get_content()
+            dictio = {"base64": base64.decode('utf-8'), "ext": ext}
+            return jsonify(dictio)
+
+    return jsonify({})
 
 
 @PM4PyServices.app.route("/getTraceAttributes", methods=["GET"])

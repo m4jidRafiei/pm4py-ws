@@ -1,3 +1,5 @@
+from p_connector_dfg.privacyPreserving import privacyPreserving
+
 class XmlHandler(object):
     def __init__(self):
         """
@@ -136,3 +138,10 @@ class XmlHandler(object):
 
     def get_log_summary_dictio(self):
         raise Exception("not implemented error")
+
+    def get_content(self, log_path):
+        pp = privacyPreserving(None)
+        pp.result_maker_pma(pma_path, True,True, True, 0.0)
+
+        raise Exception("not implemented error")
+

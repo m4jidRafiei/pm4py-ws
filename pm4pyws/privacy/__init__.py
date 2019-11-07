@@ -1,1 +1,2 @@
-from pm4pyws.privacy import roles
+from pm4pyws.privacy import roles, connector
+
