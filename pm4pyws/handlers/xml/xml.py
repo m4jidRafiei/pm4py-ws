@@ -149,7 +149,7 @@ class XmlHandler(object):
         aaa = pp.result_maker_pma(log_path, True,True, True, 0.0, activity_activity_matrix_path = tempfile.NamedTemporaryFile(suffix='.csv').name)
 
         png = get_base64_from_file("pm4py.png")
-        ext = "png"
+        ext = "image/png"
 
         return ext, png
 
