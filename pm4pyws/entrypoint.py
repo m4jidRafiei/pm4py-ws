@@ -1587,10 +1587,14 @@ def privacy_connector_method():
     trace_length = request.args.get('trace_length', default="true", type=str)
     trace_id = request.args.get('trace_id', default="true", type=str)
 
+    logging.error("relation_depth "+str(relation_depth))
+    logging.error("trace_length "+str(trace_length))
+    logging.error("trace_id "+str(trace_id))
+
     parameters = {}
-    parameters["relation_depth"] = relation_depth
-    parameters["trace_length"] = trace_length
-    parameters["trace_id"] = trace_id
+    parameters["relation_depth"] = convert_str_to_bool(relation_depth)
+    parameters["trace_length"] = convert_str_to_bool(trace_length)
+    parameters["trace_id"] = convert_str_to_bool(trace_id)
 
     if check_session_validity(session):
         logging.error("session " + str(session) + " is valid")
@@ -1627,11 +1631,17 @@ def get_content():
 
     process = request.args.get('process', type=str)
 
+    encrypt_result = request.args.get('encrypt_result', default="true", type=str)
+
+    encrypt_result = convert_str_to_bool(encrypt_result)
+
+    logging.error("encrypt_result "+str(encrypt_result))
+
     if check_session_validity(session):
         user = get_user_from_session(session)
         if lh.check_user_log_visibility(user, process):
-            ext, base64 = lh.get_handler_for_process_and_session(process, session).get_content(lh.get_handlers()[process])
-            dictio = {"base64": base64.decode('utf-8'), "ext": ext}
+            ext, base64, xml = lh.get_handler_for_process_and_session(process, session).get_content(lh.get_handlers()[process], encrypt_result=encrypt_result)
+            dictio = {"base64": base64.decode('utf-8'), "xml": xml.decode('utf-8'), "ext": ext}
             return jsonify(dictio)
 
     return jsonify({})
