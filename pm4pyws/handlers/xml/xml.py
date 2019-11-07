@@ -1,4 +1,8 @@
 from p_connector_dfg.privacyPreserving import privacyPreserving
+import logging
+import tempfile
+from pm4py.visualization.common.utils import get_base64_from_gviz, get_base64_from_file
+
 
 class XmlHandler(object):
     def __init__(self):
@@ -47,7 +51,7 @@ class XmlHandler(object):
         raise Exception("not implemented error")
 
     def build_from_path(self, path, parameters=None):
-        raise Exception("not implemented error")
+        return None
 
     def insert_event_index(self):
         raise Exception("not implemented error")
@@ -140,8 +144,13 @@ class XmlHandler(object):
         raise Exception("not implemented error")
 
     def get_content(self, log_path):
-        pp = privacyPreserving(None)
-        pp.result_maker_pma(pma_path, True,True, True, 0.0)
+        logging.error("CIAO")
+        pp = privacyPreserving(log_path.split("@@")[0])
+        aaa = pp.result_maker_pma(log_path, True,True, True, 0.0, activity_activity_matrix_path = tempfile.NamedTemporaryFile(suffix='.csv').name)
 
-        raise Exception("not implemented error")
+        png = get_base64_from_file("pm4py.png")
+        ext = "png"
+
+        return ext, png
+
 

@@ -1630,7 +1630,7 @@ def get_content():
     if check_session_validity(session):
         user = get_user_from_session(session)
         if lh.check_user_log_visibility(user, process):
-            ext, base64 = lh.get_handler_for_process_and_session(process, session).get_content()
+            ext, base64 = lh.get_handler_for_process_and_session(process, session).get_content(lh.get_handlers()[process])
             dictio = {"base64": base64.decode('utf-8'), "ext": ext}
             return jsonify(dictio)
 
