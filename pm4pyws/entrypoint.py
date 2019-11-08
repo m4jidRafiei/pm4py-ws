@@ -1631,7 +1631,13 @@ def get_content():
 
     process = request.args.get('process', type=str)
 
-    encrypt_result = request.args.get('encrypt_result', default="true", type=str)
+    encrypt_result = request.args.get('encrypt_result', type=str)
+
+    frequency_threshold = request.args.get('frequency_threshold', default=0.0, type=float)
+
+    logging.error("XXXX")
+    logging.error(encrypt_result)
+    logging.error(frequency_threshold)
 
     encrypt_result = convert_str_to_bool(encrypt_result)
 
@@ -1640,7 +1646,7 @@ def get_content():
     if check_session_validity(session):
         user = get_user_from_session(session)
         if lh.check_user_log_visibility(user, process):
-            ext, base64, xml = lh.get_handler_for_process_and_session(process, session).get_content(lh.get_handlers()[process], encrypt_result=encrypt_result)
+            ext, base64, xml = lh.get_handler_for_process_and_session(process, session).get_content(lh.get_handlers()[process], encrypt_result=encrypt_result, frequency_threshold=frequency_threshold)
             dictio = {"base64": base64.decode('utf-8'), "xml": xml.decode('utf-8'), "ext": ext}
             return jsonify(dictio)
 
