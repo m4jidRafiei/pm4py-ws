@@ -172,15 +172,8 @@ class XesHandler(object):
         """
         if parameters is None:
             parameters = {}
-        try:
-            # try faster non standard importer
-            self.log = xes_importer.apply(path, variant="nonstandard")
-            if len(self.log) == 0:
-                # non standard imported failed
-                self.log = xes_importer.apply(path)
-        except:
-            # revert to classic importer
-            self.log = xes_importer.apply(path)
+
+        self.log = xes_importer.apply(path)
         self.log, classifier_key = insert_classifier.search_act_class_attr(self.log,
                                                                            force_activity_transition_insertion=True)
 
