@@ -1586,6 +1586,8 @@ def privacy_connector_method():
     relation_depth = request.args.get('relation_depth', default="true", type=str)
     trace_length = request.args.get('trace_length', default="true", type=str)
     trace_id = request.args.get('trace_id', default="true", type=str)
+    key = request.args.get('key', default="CHIAVECHIAVECHIA", type=str)
+
 
     logging.error("relation_depth "+str(relation_depth))
     logging.error("trace_length "+str(trace_length))
@@ -1595,6 +1597,7 @@ def privacy_connector_method():
     parameters["relation_depth"] = convert_str_to_bool(relation_depth)
     parameters["trace_length"] = convert_str_to_bool(trace_length)
     parameters["trace_id"] = convert_str_to_bool(trace_id)
+    parameters["key"] = key
 
     if check_session_validity(session):
         logging.error("session " + str(session) + " is valid")
