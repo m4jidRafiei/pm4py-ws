@@ -78,16 +78,16 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     logging.error("event_logs_path = "+str(event_log_dirpath))
 
     pp = privacyPreserving(xes_log_path, process)
-    ret = pp.apply(T, L, K, C, K2, sensitive, [], bk_type, event_log_dirpath)
-    print(ret)
+    new_log_name = pp.apply(T, L, K, C, K2, sensitive, [], bk_type, event_log_dirpath).split("/")[-1]
+    print(new_log_name)
 
     conn_logs = sqlite3.connect(log_manager.database_path)
     curs_logs = conn_logs.cursor()
 
-    new_log_path = os.path.join(event_log_dirpath, new_log_name + ".xes")
+    new_log_path = os.path.join(event_log_dirpath, new_log_name)
     if not os.path.exists(new_log_path):
         new_log_name = " "+new_log_name
-        new_log_path = os.path.join(event_log_dirpath, new_log_name + ".xes")
+        new_log_path = os.path.join(event_log_dirpath, new_log_name)
     logging.error("(used internally) new_log_path = "+str(new_log_path))
     curs_logs.execute("INSERT INTO EVENT_LOGS VALUES (?,?,0,1,1)", (new_log_name, new_log_path))
     conn_logs.commit()

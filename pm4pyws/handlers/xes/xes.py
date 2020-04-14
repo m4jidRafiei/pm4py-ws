@@ -182,7 +182,7 @@ class XesHandler(object):
             self.activity_key = classifier_key
 
         # sorts the traces and the events in the log
-        self.log = sorting.sort_timestamp_log(self.log)
+        #self.log = sorting.sort_timestamp_log(self.log)
 
         self.build_variants()
         self.calculate_variants_number()
