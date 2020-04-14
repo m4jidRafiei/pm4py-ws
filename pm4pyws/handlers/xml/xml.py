@@ -143,7 +143,7 @@ class XmlHandler(object):
     def get_log_summary_dictio(self):
         raise Exception("not implemented error")
 
-    def get_content(self, log_path, encrypt_result=True, frequency_threshold=0.0):
+    def get_content(self, log_path, encrypt_result=True, frequency_threshold=0.0, key="CHIAVECHIAVECHIA"):
         pp = privacyPreserving(log_path.split("@@")[0])
 
         if encrypt_result:
@@ -152,7 +152,7 @@ class XmlHandler(object):
             svg_output_file = "pm4py_dec.svg"
 
 
-        aaa = pp.result_maker_pma(log_path, encrypt_result, True, True, frequency_threshold, svg_output_file, activity_activity_matrix_path = tempfile.NamedTemporaryFile(suffix='.csv').name)
+        aaa = pp.result_maker_pma(log_path, encrypt_result, True, True, frequency_threshold, svg_output_file, activity_activity_matrix_path = tempfile.NamedTemporaryFile(suffix='.csv').name, key=key)
 
         svg = get_base64_from_file(svg_output_file)
         xml = get_base64_from_file(log_path)
