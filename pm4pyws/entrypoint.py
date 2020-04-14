@@ -20,6 +20,7 @@ import logging
 
 from pm4pyws.privacy.roles import apply_privacy_aware
 from pm4pyws.privacy.connector import apply_connector
+from pm4pyws.privacy.tklc import apply_tklc
 
 ex = logging_factory.apply()
 um = user_iam_factory.apply(ex)
@@ -1609,6 +1610,59 @@ def privacy_connector_method():
 
         if is_admin:
             apply_connector.apply(process, lh, parameters=parameters)
+
+            logging.error("is_admin")
+
+            return jsonify({"status": "OK"})
+
+    return jsonify({"status": "FAIL"})
+
+
+@PM4PyServices.app.route("/privacyTklc", methods=["GET"])
+def privacy_tklc():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+    # reads the requested process name
+    process = request.args.get('process', default='receipt', type=str)
+
+    #L = [parameters["L"]] if "L" in parameters else 2
+    #C = [parameters["C"]] if "C" in parameters else 1
+    #K = [parameters["K"]] if "K" in parameters else 10
+    #K2 = [parameters["K2"]] if "K2" in parameters else 0.5
+    #sensitive = parameters["sensitive"] if "sensitive" in parameters else []
+    #T = [parameters["T"]] if "T" in parameters else ["minutes"]
+    #bk_type = [parameters["bk_type"]] if "bk_type" in parameters else "set"
+
+    L = request.args.get("L", type=int, default=2)
+    C = request.args.get("C", type=int, default=1)
+    K = request.args.get("K", type=int, default=10)
+    K2 = request.args.get("K2", type=int, default=0.5)
+    sensitive = request.args.get("sensitive", type=list, default=[])
+    T = request.args.get("T", type=str, default="minutes")
+    bk_type = request.args.get("bk_type", type=str, default="set")
+
+    parameters = {}
+    parameters["L"] = L
+    parameters["C"] = C
+    parameters["K"] = K
+    parameters["K2"] = K2
+    parameters["sensitive"] = sensitive
+    parameters["T"] = T
+    parameters["bk_type"] = bk_type
+
+    if check_session_validity(session):
+        logging.error("session " + str(session) + " is valid")
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
+
+        logging.error("this_user = " + str(this_user))
+        logging.error("is_admin = " + str(is_admin))
+
+        if is_admin:
+            apply_tklc.apply(process, lh.get_handler_for_process_and_session(process, session), lh, um, ex,
+                                      parameters=parameters)
 
             logging.error("is_admin")
 
