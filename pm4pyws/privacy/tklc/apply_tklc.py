@@ -71,7 +71,7 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     date_stru = now.strftime("%m-%d-%y %H-%M-%S")
 
     event_log_dirpath = Configuration.event_logs_path
-    new_log_name = " TLKC "+date_stru+" "+process+" "+str(bk_type)+"_"+str(L[0])+"_"+str(K[0])+"_"+str(C[0])+"_"+str(K2[0])+"_"+str(T[0])
+    new_log_name = "TLKC "+date_stru+" "+process+" "+str(bk_type)+"_"+str(L[0])+"_"+str(K[0])+"_"+str(C[0])+"_"+str(K2[0])+"_"+str(T[0])
 
     logging.error("xes_log_path = "+str(xes_log_path))
     logging.error("new_log_name = "+str(new_log_name))
@@ -85,6 +85,9 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     curs_logs = conn_logs.cursor()
 
     new_log_path = os.path.join(event_log_dirpath, new_log_name + ".xes")
+    if not os.path.exists(new_log_path):
+        new_log_name = " "+new_log_name
+        new_log_path = os.path.join(event_log_dirpath, new_log_name + ".xes")
     logging.error("(used internally) new_log_path = "+str(new_log_path))
     curs_logs.execute("INSERT INTO EVENT_LOGS VALUES (?,?,0,1,1)", (new_log_name, new_log_path))
     conn_logs.commit()

@@ -1638,8 +1638,8 @@ def privacy_tklc():
     L = request.args.get("L", type=int, default=2)
     C = request.args.get("C", type=int, default=1)
     K = request.args.get("K", type=int, default=10)
-    K2 = request.args.get("K2", type=int, default=0.5)
-    sensitive = request.args.get("sensitive", type=list, default=[])
+    K2 = request.args.get("K2", type=float, default=0.5)
+    sensitive = request.args.get("sensitive", type=str, default="").split("@@")
     T = request.args.get("T", type=str, default="minutes")
     bk_type = request.args.get("bk_type", type=str, default="set")
 
