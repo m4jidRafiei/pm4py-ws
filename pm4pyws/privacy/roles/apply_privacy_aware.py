@@ -6,6 +6,7 @@ from pm4py.objects.log.exporter.xes import factory as xes_exporter
 from pm4pyws.handlers.xes.xes import XesHandler
 from pp_role_mining.privacyPreserving import privacyPreserving
 from copy import deepcopy
+from datetime import datetime
 
 from pm4pywsconfiguration import configuration as Configuration
 
@@ -58,7 +59,11 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     # gets the event log object
     log = log_handler.log
 
-    new_log_name = process + "_roles_privacy_" + generate_random_string(4)
+    now = datetime.now()
+    date_stru = now.strftime("%d-%m-%y %H-%M-%S")
+
+    new_log_name = technique+" "+date_stru+" "+process
+    #new_log_name = process + "_roles_privacy_" + generate_random_string(4)
     new_log_path = os.path.join(Configuration.event_logs_path, new_log_name + ".xes")
 
     # xes_exporter.export_log(log, new_log_path)

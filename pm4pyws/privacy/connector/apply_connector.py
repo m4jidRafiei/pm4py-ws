@@ -5,6 +5,7 @@ import string
 import os
 from pm4pywsconfiguration import configuration as Configuration
 import sqlite3
+from datetime import datetime
 
 
 def generate_random_string(N):
@@ -37,7 +38,12 @@ def apply(process, log_manager, parameters=None):
     trace_id = parameters["trace_id"] if "trace_id" in parameters else True
     key = parameters["key"] if "key" in parameters else "CHIAVECHIAVECHIA"
 
-    new_log_name = xes_log_path.split("/event_logs/")[1] + "@@connector@@" + generate_random_string(4)
+    now = datetime.now()
+    date_stru = now.strftime("%d-%m-%y %H-%M-%S")
+
+    #new_log_name = xes_log_path.split("/event_logs/")[1] + "@@connector@@" + generate_random_string(4)
+    new_log_name = "connector "+date_stru+" "+process
+
     new_log_path = os.path.join(Configuration.event_logs_path, new_log_name + ".xml")
 
     pp = privacyPreserving(deepcopy(xes_log_path))

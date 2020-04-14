@@ -10,6 +10,7 @@ from copy import deepcopy
 
 from p_tlkc_privacy.privacyPreserving import privacyPreserving
 from pm4pywsconfiguration import configuration as Configuration
+from datetime import datetime
 
 
 def generate_random_string(N):
@@ -66,10 +67,16 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     # gets the event log object
     xes_log_path = log_manager.get_handlers()[process]
 
-    new_log_name = process + "_tklc_" + generate_random_string(4)
+    now = datetime.now()
+    date_stru = now.strftime("%d-%m-%y %H-%M-%S")
+
+    new_log_name = "TLKC "+date_stru+" "+process
     new_log_path = os.path.join(Configuration.event_logs_path, new_log_name + ".xes")
 
-    pp = privacyPreserving(xes_log_path, new_log_path)
+    logging.error("new_log_name = "+str(new_log_name))
+    logging.error("event_logs_path = "+str(Configuration.event_logs_path))
+
+    pp = privacyPreserving(xes_log_path, new_log_name)
     pp.apply(T, L, K, C, K2, sensitive, [], bk_type, Configuration.event_logs_path)
 
     conn_logs = sqlite3.connect(log_manager.database_path)
