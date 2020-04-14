@@ -39,10 +39,10 @@ def apply(process, log_manager, parameters=None):
     key = parameters["key"] if "key" in parameters else "CHIAVECHIAVECHIA"
 
     now = datetime.now()
-    date_stru = now.strftime("%d-%m-%y %H-%M-%S")
+    date_stru = now.strftime("%m-%d-%y_%H-%M-%S")
 
     #new_log_name = xes_log_path.split("/event_logs/")[1] + "@@connector@@" + generate_random_string(4)
-    new_log_name = "connector "+date_stru+" "+process
+    new_log_name = "connector_"+date_stru+"_"+process
 
     new_log_path = os.path.join(Configuration.event_logs_path, new_log_name + ".xml")
 
