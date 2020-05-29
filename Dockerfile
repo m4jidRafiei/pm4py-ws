@@ -1,4 +1,5 @@
-FROM tiangolo/uwsgi-nginx-flask
+FROM tiangolo/uwsgi-nginx-flask:python3.6
+
 
 RUN apt-get update
 RUN apt-get -y upgrade
@@ -16,6 +17,9 @@ RUN pip install --no-cache-dir -U pm4py==1.1.26 Flask flask-cors setuptools
 RUN pip install --no-cache-dir -U pm4pycvxopt
 #RUN pip install --no-cache-dir -U pm4pybpmn
 RUN pip install --no-cache-dir -U pp-role-mining
+RUN pip install --no-cache-dir -U p_connector_dfg
+RUN pip install --no-cache-dir -U p_tlkc_privacy
+RUN pip install pm4py==1.1.26
 
 COPY . /app
 #RUN cd /app/files && python download_big_logs.py
@@ -32,6 +36,6 @@ RUN cd /app && git clone https://github.com/Javert899/source.git
 RUN mv /app/source /app/webapp2
 RUN cd /app/webapp2 && git checkout privacyIntegration
 RUN cd /app/webapp2 && npm install && npm install --save-dev --unsafe-perm node-sass && npm install -g @angular/core @angular/cli @angular/material
-RUN cd /app/webapp2 && ng build --prod
+RUN cd /app/webapp2 && ng build
 
-RUN cd /app && python setup.py install
+#RUN cd /app && python setup.py install
