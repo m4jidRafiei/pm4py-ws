@@ -71,7 +71,7 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     date_stru = now.strftime("%m-%d-%y %H-%M-%S")
 
     event_log_dirpath = Configuration.event_logs_path
-    new_log_name = "TLKC "+date_stru+" "+process+" "+str(bk_type)+"_"+str(L[0])+"_"+str(K[0])+"_"+str(C[0])+"_"+str(K2[0])+"_"+str(T[0])
+    new_log_name = "TLKC "+date_stru+" "+process+" "+str(bk_type)+"_"+str(L[0])+"_"+str(K[0])+"_"+str(C[0])+"_"+str(K2[0])+"_"+str(T[0]) + ".xes"
 
     logging.error("xes_log_path = "+str(xes_log_path))
     logging.error("new_log_name = "+str(new_log_name))
