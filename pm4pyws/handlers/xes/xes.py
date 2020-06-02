@@ -172,15 +172,8 @@ class XesHandler(object):
         """
         if parameters is None:
             parameters = {}
-        try:
-            # try faster non standard importer
-            self.log = xes_importer.apply(path, variant="nonstandard")
-            if len(self.log) == 0:
-                # non standard imported failed
-                self.log = xes_importer.apply(path)
-        except:
-            # revert to classic importer
-            self.log = xes_importer.apply(path)
+
+        self.log = xes_importer.apply(path)
         self.log, classifier_key = insert_classifier.search_act_class_attr(self.log,
                                                                            force_activity_transition_insertion=True)
 
@@ -189,7 +182,7 @@ class XesHandler(object):
             self.activity_key = classifier_key
 
         # sorts the traces and the events in the log
-        self.log = sorting.sort_timestamp_log(self.log)
+        #self.log = sorting.sort_timestamp_log(self.log)
 
         self.build_variants()
         self.calculate_variants_number()
@@ -639,6 +632,11 @@ class XesHandler(object):
         dfg = dfg_factory.apply(self.log, parameters={constants.PARAMETER_CONSTANT_ACTIVITY_KEY: attribute_key})
 
         return dfg
+
+    def get_trace_attributes(self):
+        trace_attr = attributes_filter.get_all_trace_attributes_from_log(self.log)
+
+        return trace_attr
 
     def get_events_for_dotted(self, attributes):
         """

@@ -3,6 +3,7 @@ import sqlite3
 from pm4pywsconfiguration import configuration as Configuration
 from pm4pyws.handlers.parquet.parquet import ParquetHandler
 from pm4pyws.handlers.xes.xes import XesHandler
+from pm4pyws.handlers.xml.xml import XmlHandler
 from pm4pyws.log_manager.interface.log_manager import LogHandler
 from pm4py.objects.log.exporter.xes import factory as xes_exporter
 from pm4py.objects.log.exporter.parquet import factory as parquet_exporter
@@ -79,14 +80,22 @@ class MultiNodeSessionHandler(LogHandler):
         handler = None
         file_path = self.logs_correspondence[log_name]
         is_parquet = False
+        is_xml = False
         extension = "xes"
         if file_path.endswith(".parquet") or file_path.endswith(".csv"):
             is_parquet = True
             extension = "parquet"
+        elif file_path.endswith(".parquet") or file_path.endswith(".csv"):
+            is_parquet = False
+            is_xml = True
+            extension = "xml"
         temp_log_path = os.path.join(Configuration.temp_logs_path, str(log_name)+"_"+str(session)+"."+extension)
         if os.path.exists(temp_log_path):
             if is_parquet:
                 handler = ParquetHandler(is_lazy=True)
+                handler.build_from_path(temp_log_path)
+            elif is_xml:
+                handler = XmlHandler()
                 handler.build_from_path(temp_log_path)
             else:
                 handler = XesHandler()
@@ -113,6 +122,9 @@ class MultiNodeSessionHandler(LogHandler):
             handler.build_from_csv(file_path)
         elif file_path.endswith(".xes") or file_path.endswith(".xes.gz"):
             handler = XesHandler()
+            handler.build_from_path(file_path)
+        elif file_path.endswith("xml"):
+            handler = XmlHandler()
             handler.build_from_path(file_path)
         return handler
 
@@ -206,6 +218,20 @@ class MultiNodeSessionHandler(LogHandler):
                 log = handler.log
                 target_path = os.path.join(Configuration.temp_logs_path, str(process)+"_"+str(session)+".xes")
                 xes_exporter.export_log(log, target_path)
+            elif type(handler) is XmlHandler:
+                pass
+                #log = handler.log
+                #target_path = os.path.join(Configuration.temp_logs_path, str(process)+"_"+str(session)+".xes")
+                #xes_exporter.export_log(log, target_path)
+
+    def get_handler_type(self, handler):
+        if handler.endswith(".parquet"):
+            return "parquet"
+        elif handler.endswith(".xes") or handler.endswith(".xes.gz"):
+            return "xes"
+        elif handler.endswith(".xml"):
+            return "xml"
+        print(type(handler))
 
     def check_is_admin(self, user):
         """

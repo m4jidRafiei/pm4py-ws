@@ -1,5 +1,5 @@
 enable_upload = False
-enable_download = False
+enable_download = True
 enable_load_local_path = False
 enable_session = False
 upload_as_temporary = True
@@ -16,7 +16,7 @@ temp_logs_path = files_path + '/temp_logs'
 event_log_db_path = sql3_databases_path + '/event_logs.db'
 users_db_path = sql3_databases_path + '/users.db'
 ssl_context_directory = 'ssl_cert_gen'
-log_manager_default_variant = "basic_log_session_handling"
+log_manager_default_variant = "multinode_file_based"
 enable_process_caching = False
 overall_enable_alignments = True
 overall_enable_transient = False

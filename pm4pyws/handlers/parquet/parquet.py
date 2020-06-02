@@ -894,6 +894,12 @@ class ParquetHandler(object):
 
         return get_align.perform_alignments(self.get_reduced_dataframe(), petri_string, parameters=parameters)
 
+
+    def get_trace_attributes(self):
+        trace_attr = []
+
+        return trace_attr
+
     def get_events_for_dotted(self, attributes):
         """
         Get the events (for the dotted chart) with the corresponding list of attributes

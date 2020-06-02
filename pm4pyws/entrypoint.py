@@ -18,6 +18,10 @@ import socket
 
 import logging
 
+from pm4pyws.privacy.roles import apply_privacy_aware
+from pm4pyws.privacy.connector import apply_connector
+from pm4pyws.privacy.tklc import apply_tklc
+
 ex = logging_factory.apply()
 um = user_iam_factory.apply(ex)
 lh = session_manager_factory.apply(ex, variant=Configuration.log_manager_default_variant)
@@ -735,13 +739,15 @@ def get_logs_list_advanced():
     if check_session_validity(session):
         user = get_user_from_session(session)
 
-        all_keys = lh.get_handlers().keys()
+        handlers = lh.get_handlers()
+        all_keys = handlers.keys()
 
         for key in all_keys:
             if lh.check_user_log_visibility(user, key):
                 can_download = lh.check_user_enabled_download(user, key)
                 can_delete = lh.can_delete(user, key)
-                available_keys.append({"log_name": key, "can_download": can_download, "can_delete": can_delete})
+                type = lh.get_handler_type(handlers[key])
+                available_keys.append({"log_name": key, "can_download": can_download, "can_delete": can_delete, "type": type})
 
         logging.info("get_logs_list_advanced start session=" + str(session) + " user=" + str(user))
 
@@ -1513,3 +1519,219 @@ def check_versions():
     except:
         return {"pm4py": str(pm4py.__version__), "pm4pyws": str(pm4pyws.__version__),
                 "hostname": str(socket.gethostname())}
+
+
+def convert_str_to_bool(stri):
+    if stri.lower() == "true":
+        return True
+    return False
+
+
+@PM4PyServices.app.route("/rolesPrivacyAware", methods=["GET"])
+def roles_privacy_aware():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+    # reads the requested process name
+    process = request.args.get('process', default='receipt', type=str)
+
+    no_substitutions = request.args.get('no_substitutions', default=2, type=int)
+    selective_lower_bound_applied = request.args.get('selective_lower_bound_applied', default="true", type=str)
+    selective_upper_bound_applied = request.args.get('selective_upper_bound_applied', default="true", type=str)
+    fixed_value = request.args.get('fixed_value', default=0, type=int)  # fixed_value, selective, frequency_based
+    technique = request.args.get('technique', default='fixed_value', type=str)
+    resource_aware = request.args.get('resource_aware', default="true", type=str)
+    hashed_activities = request.args.get('hashed_activities', default="true", type=str)
+    event_attributes2remove = request.args.get('event_attributes2remove', default="", type=str).split("@@")
+    trace_attributes2remove = request.args.get('trace_attributes2remove', default="", type=str).split("@@")
+
+    parameters = {}
+    parameters["no_substitutions"] = no_substitutions
+    parameters["selective_lower_bound_applied"] = convert_str_to_bool(selective_lower_bound_applied)
+    parameters["selective_upper_bound_applied"] = convert_str_to_bool(selective_upper_bound_applied)
+    parameters["fixed_value"] = fixed_value
+    parameters["technique"] = technique
+    parameters["resource_aware"] = convert_str_to_bool(resource_aware)
+    parameters["hashed_activities"] = convert_str_to_bool(hashed_activities)
+    parameters["event_attributes2remove"] = event_attributes2remove
+    parameters["trace_attributes2remove"] = trace_attributes2remove
+
+    if check_session_validity(session):
+        logging.error("session " + str(session) + " is valid")
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
+
+        logging.error("this_user = " + str(this_user))
+        logging.error("is_admin = " + str(is_admin))
+
+        if is_admin:
+            apply_privacy_aware.apply(process, lh.get_handler_for_process_and_session(process, session), lh, um, ex,
+                                      parameters=parameters)
+
+            logging.error("is_admin")
+
+            return jsonify({"status": "OK"})
+
+    return jsonify({"status": "FAIL"})
+
+
+@PM4PyServices.app.route("/privacyConnectorMethod", methods=["GET"])
+def privacy_connector_method():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+    # reads the requested process name
+    process = request.args.get('process', default='receipt', type=str)
+
+    relation_depth = request.args.get('relation_depth', default="true", type=str)
+    trace_length = request.args.get('trace_length', default="true", type=str)
+    trace_id = request.args.get('trace_id', default="true", type=str)
+    key = request.args.get('key', default="CHIAVECHIAVECHIA", type=str)
+
+
+    logging.error("relation_depth "+str(relation_depth))
+    logging.error("trace_length "+str(trace_length))
+    logging.error("trace_id "+str(trace_id))
+
+    parameters = {}
+    parameters["relation_depth"] = convert_str_to_bool(relation_depth)
+    parameters["trace_length"] = convert_str_to_bool(trace_length)
+    parameters["trace_id"] = convert_str_to_bool(trace_id)
+    parameters["key"] = key
+
+    if check_session_validity(session):
+        logging.error("session " + str(session) + " is valid")
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
+
+        logging.error("this_user = " + str(this_user))
+        logging.error("is_admin = " + str(is_admin))
+
+        if is_admin:
+            apply_connector.apply(process, lh, parameters=parameters)
+
+            logging.error("is_admin")
+
+            return jsonify({"status": "OK"})
+
+    return jsonify({"status": "FAIL"})
+
+
+@PM4PyServices.app.route("/privacyTklc", methods=["GET"])
+def privacy_tklc():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+    # reads the requested process name
+    process = request.args.get('process', default='receipt', type=str)
+
+    #L = [parameters["L"]] if "L" in parameters else 2
+    #C = [parameters["C"]] if "C" in parameters else 1
+    #K = [parameters["K"]] if "K" in parameters else 10
+    #K2 = [parameters["K2"]] if "K2" in parameters else 0.5
+    #sensitive = parameters["sensitive"] if "sensitive" in parameters else []
+    #T = [parameters["T"]] if "T" in parameters else ["minutes"]
+    #bk_type = [parameters["bk_type"]] if "bk_type" in parameters else "set"
+
+    L = request.args.get("L", type=int, default=2)
+    C = request.args.get("C", type=int, default=1)
+    K = request.args.get("K", type=int, default=10)
+    K2 = request.args.get("K2", type=float, default=0.5)
+    sensitive = request.args.get("sensitive", type=str, default="").split("@@")
+    T = request.args.get("T", type=str, default="minutes")
+    bk_type = request.args.get("bk_type", type=str, default="set")
+
+    parameters = {}
+    parameters["L"] = L
+    parameters["C"] = C
+    parameters["K"] = K
+    parameters["K2"] = K2
+    parameters["sensitive"] = sensitive
+    parameters["T"] = T
+    parameters["bk_type"] = bk_type
+
+    if check_session_validity(session):
+        logging.error("session " + str(session) + " is valid")
+        this_user = get_user_from_session(session)
+        is_admin = lh.check_is_admin(this_user)
+
+        logging.error("this_user = " + str(this_user))
+        logging.error("is_admin = " + str(is_admin))
+
+        if is_admin:
+            apply_tklc.apply(process, lh.get_handler_for_process_and_session(process, session), lh, um, ex,
+                                      parameters=parameters)
+
+            logging.error("is_admin")
+
+            return jsonify({"status": "OK"})
+
+    return jsonify({"status": "FAIL"})
+
+
+@PM4PyServices.app.route("/getContent", methods=["GET"])
+def get_content():
+    """
+    Gets the list of logs loaded into the system
+
+    Returns
+    -----------
+    dictio
+        JSONified dictionary that contains in the 'logs' entry the list of events logs
+    """
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+
+    process = request.args.get('process', type=str)
+
+    encrypt_result = request.args.get('encrypt_result', type=str)
+
+    frequency_threshold = request.args.get('frequency_threshold', default=0.0, type=float)
+    key = request.args.get('key', default="CHIAVECHIAVECHIA", type=str)
+
+    logging.error("XXXX")
+    logging.error(encrypt_result)
+    logging.error(frequency_threshold)
+
+    encrypt_result = convert_str_to_bool(encrypt_result)
+
+    logging.error("encrypt_result "+str(encrypt_result))
+
+    if check_session_validity(session):
+        user = get_user_from_session(session)
+        if lh.check_user_log_visibility(user, process):
+            ext, base64, xml = lh.get_handler_for_process_and_session(process, session).get_content(lh.get_handlers()[process], encrypt_result=encrypt_result, frequency_threshold=frequency_threshold, key=key)
+            dictio = {"base64": base64.decode('utf-8'), "xml": xml.decode('utf-8'), "ext": ext}
+            return jsonify(dictio)
+
+    return jsonify({})
+
+
+@PM4PyServices.app.route("/getTraceAttributes", methods=["GET"])
+def get_trace_attributes_list():
+    clean_expired_sessions()
+
+    # reads the session
+    session = request.args.get('session', type=str)
+    # reads the requested process name
+    process = request.args.get('process', default='receipt', type=str)
+
+    logging.info("get_attributes_list start session=" + str(session) + " process=" + str(process))
+
+    if check_session_validity(session):
+        user = get_user_from_session(session)
+        if lh.check_user_log_visibility(user, process):
+            attributes_list = sorted(
+                list(lh.get_handler_for_process_and_session(process, session).get_trace_attributes()))
+            logging.info(
+                "get_attributes_list complete session=" + str(session) + " process=" + str(process) + " user=" + str(
+                    user))
+
+            return jsonify({"attributes_list": attributes_list})
+
+    return jsonify({"attributes_list": []})

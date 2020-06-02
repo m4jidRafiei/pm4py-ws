@@ -2,3 +2,5 @@ pm4py
 Flask
 flask-cors
 setuptools
+pp-role-mining
+p_connector_dfg
