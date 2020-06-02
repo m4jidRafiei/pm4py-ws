@@ -77,8 +77,9 @@ def apply(process, log_handler, log_manager, user_manager, exc_handler, paramete
     logging.error("new_log_name = "+str(new_log_name))
     logging.error("event_logs_path = "+str(event_log_dirpath))
 
+
     pp = privacyPreserving(xes_log_path, process)
-    new_log_name = pp.apply(T, L, K, C, K2, sensitive, [], bk_type, event_log_dirpath).split("/")[-1]
+    pp.apply(T, L, K, C, K2, sensitive, [], bk_type, event_log_dirpath, new_log_name)
     print(new_log_name)
 
     conn_logs = sqlite3.connect(log_manager.database_path)
