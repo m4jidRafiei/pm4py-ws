@@ -17,8 +17,8 @@ RUN pip install --no-cache-dir -U pm4py==1.1.26 Flask flask-cors setuptools
 RUN pip install --no-cache-dir -U pm4pycvxopt
 #RUN pip install --no-cache-dir -U pm4pybpmn
 RUN pip install --no-cache-dir -U pp-role-mining
-RUN pip install --no-cache-dir -U p_connector_dfg
 RUN pip install --no-cache-dir -U p_tlkc_privacy
+RUN pip install --no-cache-dir -U p_connector_dfg
 RUN pip install pm4py==1.1.26
 
 COPY . /app
