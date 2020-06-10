@@ -152,7 +152,7 @@ class XmlHandler(object):
             svg_output_file = "pm4py_dec.svg"
 
 
-        aaa = pp.result_maker_pma(log_path, encrypt_result, True, True, frequency_threshold, svg_output_file, activity_activity_matrix_path = tempfile.NamedTemporaryFile(suffix='.csv').name, key=key)
+        aaa = pp.result_maker_ela(log_path, encrypt_result, True, True, frequency_threshold, svg_output_file, activity_activity_matrix_path = tempfile.NamedTemporaryFile(suffix='.csv').name, key=key)
 
         svg = get_base64_from_file(svg_output_file)
         xml = get_base64_from_file(log_path)
