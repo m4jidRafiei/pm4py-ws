@@ -1,4 +1,4 @@
-##Privacy Integration into PMTK
+## Privacy Integration into PMTK
 This is a project which integrates the privacy preservation techniques introduced in [PPDP-PM](https://github.com/m4jidRafiei/PPDP-PM) into PMTK, where process mining algorithms can directly be applied to the privacy-aware event logs. Use the following docker commands to run this application:
 
 ```shell
