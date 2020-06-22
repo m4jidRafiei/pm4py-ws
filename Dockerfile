@@ -16,9 +16,9 @@ COPY ./docker-sec-confs/jail.local /etc/fail2ban/jail.local
 RUN pip install --no-cache-dir -U pm4py==1.1.26 Flask flask-cors setuptools
 RUN pip install --no-cache-dir -U pm4pycvxopt
 #RUN pip install --no-cache-dir -U pm4pybpmn
-RUN pip install --no-cache-dir -U pp_role_mining==0.0.9
-RUN pip install --no-cache-dir -U p_tlkc_privacy==0.0.11
-RUN pip install --no-cache-dir -U p_connector_dfg==0.0.9
+RUN pip install --no-cache-dir -U pp_role_mining==0.0.10
+RUN pip install --no-cache-dir -U p_tlkc_privacy==0.0.13
+RUN pip install --no-cache-dir -U p_connector_dfg==0.0.10
 RUN pip install pm4py==1.1.26
 
 COPY . /app

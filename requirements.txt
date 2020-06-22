@@ -4,3 +4,4 @@ flask-cors
 setuptools
 pp-role-mining
 p_connector_dfg
+p-tlkc-privacy
